@@ -21,14 +21,17 @@ shinyUI(pageWithSidebar(
         fileInput('csvInput', 'Choose CSV File',
                   accept=c('text/csv', 'text/comma-separated-values,text/plain', '.csv')),
         tags$hr(),
-        numericInput(inputId="nbReplications", label="Number of replications", value=30)
+        numericInput(inputId="nbReplications", label="Number of replications", value=30),
+        conditionalPanel(condition="$('html').hasClass('shiny-busy')", h5("Wait..."))
     ),
     mainPanel(
     tabsetPanel(
         tabPanel("Base data", dataTableOutput('data')),
-        tabPanel("Plots"),
+        tabPanel("Plots",
+                 h4("Computation can be long, be patient..."),
+                 plotOutput('gibratRankSize')),
         tabPanel("Growth Table", dataTableOutput('growthTable')),
-        tabPanel("Correlations"),
+        tabPanel("Correlations", htmlOutput('correlationsFigures')),
         tabPanel("About")
         
     )

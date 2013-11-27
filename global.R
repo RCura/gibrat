@@ -37,7 +37,7 @@ compute_growthtable <- function (df)
     }
     growthratetable[] <- growthratetable_matrix[]
     growthparameters <- growthratetable[1:2,]
-    rownames(growthparameters) <- c("Mean", "Standard Deviation")
+    rownames(growthparameters) <- c("Mean Growth (%)", "Growth StDev (%)")
     growthparameters[1,] <- apply(X=growthratetable, MARGIN=2, FUN=mean) # Calcul de la moyenne
     growthparameters[2,] <- apply(X=growthratetable, MARGIN=2, FUN=sd) # Calcul de l'écart-type
     return(growthparameters)
@@ -46,15 +46,10 @@ compute_growthtable <- function (df)
 ############ RUN_SIMULATION ############
 run_simulation <- function (df, reps)
 {
-    print('ok1')
     growth_table <- compute_growthtable(df=df)
-    print('ok2')
     simList <- lapply(X=c(1:reps),function (x) run_replication(obs_data=df, growthtable=growth_table ))
-    print('ok3')
     L <- length(simList)
-    print('ok4')
     RC <- dim(simList[[1]])
-    print('ok5')
     simArray <- array(unlist(simList), dim=c(RC[1], RC[2], L))
     print('ok6')
     return(simArray)

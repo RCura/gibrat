@@ -38,9 +38,11 @@ outil.simulationMean <- apply(X=outil.simulations[,,], 1:2, mean)
 outil.simulationSD <- apply(X=log(outil.simulations[,,]), 1:2, sd)
 # On passe à la création d'un tableau des rangs de la moyenne des simulations.
 MeanRanks <- create_rank_tables(obsdata=outil.obsdata, simMean=outil.simulationMean)
-outil.simRank <- as.data.frame(MeanRanks[1]) ; outil.obsRank <- as.data.frame(MeanRanks[2])
+outil.simRank <- as.data.frame(MeanRanks[1])
+outil.obsRank <- as.data.frame(MeanRanks[2])
 remove(MeanRanks)
-colnames(outil.simRank) <- colnames(outil.obsRank) <- colnames(outil.obsdata)
+colnames(outil.obsRank) <- colnames(outil.obsdata)
+colnames(outil.simRank) <- colnames(outil.obsdata)
 # On crée un tableau avec les R² des corrélations observées/simulées des distributions finales de villes pour chaque réplication.
 outil.correlationMatrix <- as.matrix(unlist(lapply(1:dim(outil.simulations)[[3]],function (x) return(cor(log(outil.obsdata[ncol(outil.obsdata)]),y=log(outil.simulations[,ncol(outil.obsdata),x]))))))
 dimnames(outil.correlationMatrix) <- dimnames(outil.simulations)[3]
