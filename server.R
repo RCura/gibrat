@@ -3,14 +3,39 @@ library(shiny)
 # Define server logic for random distribution application
 shinyServer(function(input, output) {
     
+    values <- reactiveValues(dataSource= 'none')
+    
+    observe({
+        if (input$testData > 0){
+            values$dataSource <- "data/villesFr1831.csv"
+        }
+    })
+    
+    observe({
+        if (!is.null(input$csvInput)){
+            values$dataSource <- input$csvInput$datapath
+        }
+    })
+    
+    upload <- reactive({
+        csvPath <- values$dataSource
+        if(csvPath == 'none'){return()}
+        
+        baseData <- read.csv(file=csvPath,
+                             quote=input$quote,
+                             sep=input$sep,
+                             header=input$header,
+                             check.names = FALSE)
+        return(baseData)   
+    })
+    
     readData <- reactive({
-        fileInput <- input$csvInput
-        if (is.null(fileInput))
-            return(NULL)
-        df <-read.csv(fileInput$datapath, header=input$header, sep=input$sep, quote=input$quote, check.names=FALSE)
-        row.names(df) <- df[,1]
-        colnames(df)[1] <- "Name"
-        return(df)
+        if (!is.null(upload())) {
+            df <- upload()
+            row.names(df) <- df[,1]
+            colnames(df)[1] <- "Name"
+            return(df) 
+        } else { return()}    
     })
     
     calcData <- reactive({
@@ -34,9 +59,9 @@ shinyServer(function(input, output) {
     })
     
     simulationsData <- reactive({
-        if (!is.null(calcData())) {
+        if (!is.null(calcData()) && input$runSim > 0) {
             df <- calcData()
-            nbReps <- input$nbReplications
+            nbReps <- isolate(input$nbReplications)
             print(nbReps)
             simData <- run_simulation(df=df, reps=nbReps)
             dimnames(simData) <- list(rownames(df), colnames(df), paste("Sim", 1:nbReps, sep=""))
@@ -142,6 +167,14 @@ shinyServer(function(input, output) {
         }
     })
     
+    output$growthPlot <- renderPlot({
+        if (!is.null(calcData())){
+            growthTable <- computeGrowthTable()
+            plot(y=unlist(growthTable[1,]), x=colnames(calcData()))
+        }
+        
+    })
+    
     output$growthTable <- renderDataTable({
         if (!is.null(calcData())){
             growthTable <- computeGrowthTable()
@@ -175,6 +208,7 @@ shinyServer(function(input, output) {
         legend(x="bottomleft", "Simulées", cex=0.7, seg.len=4, col="darkgrey" , lty=1 )
         legend(x="bottomright", "Moyenne des simulations", cex=0.7, seg.len=4, col="firebrick" , lty=1, lwd=2 )
     })
+    
     
     output$correlationsFigures <- renderPrint({
         if (!is.null(correlationMatrix())){

@@ -1,16 +1,5 @@
-############ IMPORT_CSV ############
-mon_import_csv <- function(file="Explorateur")
-{
-    if (file == "Explorateur")
-    {myfile <- file.choose()} 
-    else
-    {myfile <- file}
-    mydata.obsdata <- read.csv(myfile)
-    rownames(mydata.obsdata) <- mydata.obsdata[,1]
-    colnames(mydata.obsdata) <- sub(pattern="X", replacement="", x=colnames(mydata.obsdata))
-    mydata.obsdata <- mydata.obsdata[2:ncol(mydata.obsdata)]
-    return(mydata.obsdata)
-}
+require(parallel)
+
 
 ############ COMPUTE_GROWTHTABLE ############
 compute_growthtable <- function (df)
@@ -47,7 +36,7 @@ compute_growthtable <- function (df)
 run_simulation <- function (df, reps)
 {
     growth_table <- compute_growthtable(df=df)
-    simList <- lapply(X=c(1:reps),function (x) run_replication(obs_data=df, growthtable=growth_table ))
+    simList <- mclapply(X=c(1:reps),function (x) run_replication(obs_data=df, growthtable=growth_table ), mc.cores=24)
     L <- length(simList)
     RC <- dim(simList[[1]])
     simArray <- array(unlist(simList), dim=c(RC[1], RC[2], L))
