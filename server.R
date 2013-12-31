@@ -167,15 +167,28 @@ shinyServer(function(input, output) {
         }
     })
     
+    
     output$growthPlot <- renderPlot({
         if (!is.null(calcData())){
             growthTable <- computeGrowthTable()
-            plot(y=unlist(growthTable[1,]), x=colnames(calcData()))
+            meanGrowth <- unlist(growthTable[1,])
+            sdGrowth <- unlist(growthTable[2,])
+            minY <- min(meanGrowth - sdGrowth) 
+            maxY <- max(meanGrowth + sdGrowth)
+            xLabels <- colnames(calcData())[-1]
+            polyX <- c(xLabels, rev(xLabels))
+            polyY <- c((meanGrowth + sdGrowth), rev(meanGrowth - sdGrowth))
+            plot(y=unlist(growthTable[1,]), x=colnames(calcData())[-1],
+                 ylim=c(minY, maxY), type="b", pch=4, col.points="black",
+                 xlab="Year",
+                 ylab="Growth (%)")
+            polygon(polyX, polyY, col="blue", border = NA,density=50)
+            
         }
         
     })
     
-    output$growthTable <- renderDataTable({
+    exportGrowthTable <- reactive({
         if (!is.null(calcData())){
             growthTable <- computeGrowthTable()
             periodNames <- colnames(growthTable)
@@ -187,6 +200,19 @@ shinyServer(function(input, output) {
             return()
         }
     })
+    
+    output$growthTable <- renderDataTable({
+        exportGrowthTable()
+    })
+    
+
+    
+    output$dlButton <- downloadHandler(
+        filename = function() { paste(values$dataSource, "_growth", '.csv', sep='') },
+        content = function(file) {
+            write.table(x=exportGrowthTable(), file=file,sep=",", dec=".", row.names=FALSE, col.names=TRUE, quote=TRUE)
+        }
+    )
     
     
     output$gibratRankSize <- renderPlot({
