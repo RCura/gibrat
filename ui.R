@@ -22,7 +22,9 @@ shinyUI(pageWithSidebar(
         fileInput('csvInput', 'Choose CSV File',
                   accept=c('text/csv', 'text/comma-separated-values,text/plain', '.csv')),
         actionButton(inputId="testData", label="Load test dataset"),
-        tags$hr()
+        tags$hr(),
+        selectInput("idColumn", "ID", choices="", multiple=FALSE),
+        selectInput("timeColumnSelected", "Time columns :",choices="", multiple=TRUE)
        
     ),
     mainPanel(
@@ -34,7 +36,7 @@ shinyUI(pageWithSidebar(
                  tags$br(),
                  dataTableOutput('growthTable')),
         tabPanel("Simulation",
-                 numericInput(inputId="nbReplications", label="Number of replications", value=30, min=10, max=200, step=10 ),
+                 numericInput(inputId="nbReplications", label="Number of replications", value=10, min=10, max=200, step=10 ),
                  tags$hr(),
                  actionButton(inputId="runSim", label="Run simulation"),
                  conditionalPanel(condition="$('html').hasClass('shiny-busy')",

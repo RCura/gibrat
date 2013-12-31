@@ -1,7 +1,7 @@
 library(shiny)
 
 # Define server logic for random distribution application
-shinyServer(function(input, output) {
+shinyServer(function(input, output, session) {
     
     values <- reactiveValues(dataSource= 'none')
     
@@ -20,28 +20,29 @@ shinyServer(function(input, output) {
     upload <- reactive({
         csvPath <- values$dataSource
         if(csvPath == 'none'){return()}
-        
         baseData <- read.csv(file=csvPath,
                              quote=input$quote,
                              sep=input$sep,
                              header=input$header,
                              check.names = FALSE)
+        allColumns <- c("None", unlist(colnames(baseData)))
+        
+        if(csvPath == 'data/villesFr1831.csv'){
+            updateTestDataInputs(session, allColumns)
+        } else {
+            updateInputs(session, allColumns)
+        }
+
         return(baseData)   
     })
     
-    readData <- reactive({
-        if (!is.null(upload())) {
-            df <- upload()
-            row.names(df) <- df[,1]
-            colnames(df)[1] <- "Name"
-            return(df) 
-        } else { return()}    
-    })
     
     calcData <- reactive({
-        if (!is.null(readData())){
-            df <- readData()
-            calcData <- df[,-1]
+        if (!is.null(upload())){
+            idColumn <- input$IdColumn
+            timeColumns <- input$timeColumnSelected
+            calcData <- upload()[timeColumns]
+            row.names(calcData) <- unlist(upload()[idColumn])
             return(calcData)
         } else {
             return()
@@ -160,8 +161,11 @@ shinyServer(function(input, output) {
     })
     
     output$data <- renderDataTable({
-        if (!is.null(readData())) {
-            readData()
+        if (!is.null(calcData())) {
+            df <- calcData()
+            df <- cbind(upload()[input$idColumn], df)
+            colnames(df)[1] <- "Name"
+            return(df)
         } else {
             return()
         }
@@ -203,7 +207,7 @@ shinyServer(function(input, output) {
     
     output$growthTable <- renderDataTable({
         exportGrowthTable()
-    })
+    }, , options = list(iDisplayLength = 50))
     
 
     
@@ -247,6 +251,24 @@ shinyServer(function(input, output) {
             return()
         }
     })
+    
+    updateInputs <- function(session, columns){
+        updateSelectInput(session=session, inputId="IdColumn",
+                          choices=columns, selected="")
+        
+        updateSelectInput(session=session, inputId="timeColumnSelected",
+                          choices=columns, selected="")
+    }
+    
+    updateTestDataInputs <- function(session, columns){
+        updateSelectInput(session=session, inputId="idColumn",
+                          choices=columns, selected=columns[2])
+        
+        updateSelectInput(session=session, inputId="timeColumnSelected",
+                          choices=columns, selected=columns[-c(1,2)])
+    }
+    
+    
     
     
 })
