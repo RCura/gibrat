@@ -63,7 +63,8 @@ run_replication <- function (obs_data, growthtable)
         {
             currentPop <- my_replication_matrix[j,i]
             normalGrowthRate <- rnorm(1, mean=currentGrowthMean, sd=currentGrowthSd)
-            my_replication_matrix[j,i+1] <-  currentPop * (1 + normalGrowthRate/100)
+            newPop <- currentPop * (1 + normalGrowthRate/100)
+            my_replication_matrix[j,i+1] <-  ifelse(newPop > 0, newPop, 1)
         }
     }
     my_replication[] <- my_replication_matrix[]
