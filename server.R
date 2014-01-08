@@ -39,7 +39,7 @@ shinyServer(function(input, output, session) {
     
     calcData <- reactive({
         if (!is.null(upload())){
-            idColumn <- input$IdColumn
+            idColumn <- input$idColumn
             timeColumns <- input$timeColumnSelected
             calcData <- upload()[timeColumns]
             row.names(calcData) <- unlist(upload()[idColumn])
@@ -253,7 +253,7 @@ shinyServer(function(input, output, session) {
     })
     
     updateInputs <- function(session, columns){
-        updateSelectInput(session=session, inputId="IdColumn",
+        updateSelectInput(session=session, inputId="idColumn",
                           choices=columns, selected="")
         
         updateSelectInput(session=session, inputId="timeColumnSelected",
