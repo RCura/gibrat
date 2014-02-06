@@ -52,7 +52,8 @@ shinyServer(function(input, output, session) {
     computeGrowthTable <- reactive({
         if (!is.null(calcData())) {
             df <- calcData()
-            growthTable <- compute_growthtable(df)
+            #growthTable <- compute_growthtable(df)
+            growthTable <- compute_yearly_growth_table(df)
             return(growthTable)
         } else {
             return()

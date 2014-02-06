@@ -88,3 +88,38 @@ create_rank_tables <- function (obsdata, simMean)
     obsRank[] <- obsRank_matrix[]
     return(list(simRank, obsRank))
 }
+
+
+compute_yearly_growth_table <- function(df)
+{
+    growthratetable <- df[1:ncol(df)-1]
+    # Creation des noms de périodes
+    for (i in 1:ncol(growthratetable))
+    {
+        t0_name <- colnames(df[i])
+        t1_name <- colnames(df[i+1])
+        myname <- as.character(paste(t0_name, t1_name, sep="-"))
+        colnames(growthratetable)[i] <- myname
+    }
+    growthratetable[,] <- NA
+    growthratetable_matrix <- as.matrix(growthratetable)
+    df_matrix <- as.matrix(df)
+    
+    # On le remplit avec les taux de croissance
+    for (rownb in 1:nrow(growthratetable_matrix))
+    {
+        for (colnb in 1:ncol(growthratetable_matrix))
+        {
+            diffDate <- as.numeric(colnames(df_matrix)[colnb + 1]) - as.numeric(colnames(df_matrix)[colnb])
+            firstPop <- df_matrix[rownb, colnb]
+            lastPop <- df_matrix[rownb, colnb + 1]
+            growthratetable_matrix[rownb,colnb] <-  (lastPop / firstPop)^(1/diffDate - 1)
+        }
+    }
+    growthratetable[] <- growthratetable_matrix[]
+    growthparameters <- growthratetable[1:2,]
+    rownames(growthparameters) <- c("Annual Mean Growth (%)", "Annual Growth StDev (%)")
+    growthparameters[1,] <- apply(X=growthratetable, MARGIN=2, FUN=mean) # Calcul de la moyenne
+    growthparameters[2,] <- apply(X=growthratetable, MARGIN=2, FUN=sd) # Calcul de l'écart-type
+    return(growthparameters)
+}
