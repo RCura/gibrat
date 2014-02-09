@@ -40,7 +40,6 @@ run_simulation <- function (df, reps)
     L <- length(simList)
     RC <- dim(simList[[1]])
     simArray <- array(unlist(simList), dim=c(RC[1], RC[2], L))
-    print('ok6')
     return(simArray)
 }
 
@@ -113,7 +112,8 @@ compute_yearly_growth_table <- function(df)
             diffDate <- as.numeric(colnames(df_matrix)[colnb + 1]) - as.numeric(colnames(df_matrix)[colnb])
             firstPop <- df_matrix[rownb, colnb]
             lastPop <- df_matrix[rownb, colnb + 1]
-            growthratetable_matrix[rownb,colnb] <-  (lastPop / firstPop)^(1/diffDate - 1)
+            #growthratetable_matrix[rownb,colnb] <-  (lastPop / firstPop)^(1/diffDate - 1)
+            growthratetable_matrix[rownb, colnb] <- ((lastPop / firstPop)^(1/diffDate) - 1) * 100
         }
     }
     growthratetable[] <- growthratetable_matrix[]
@@ -122,4 +122,22 @@ compute_yearly_growth_table <- function(df)
     growthparameters[1,] <- apply(X=growthratetable, MARGIN=2, FUN=mean) # Calcul de la moyenne
     growthparameters[2,] <- apply(X=growthratetable, MARGIN=2, FUN=sd) # Calcul de l'écart-type
     return(growthparameters)
+}
+
+expand_growth_table <- function(growthTable){
+    mydf <- data.frame(PERIOD=colnames(growthTable), MEAN=growthTable[1,], STDEV=growthTable[2,])
+    print("#################################")
+    print(colnames(growthTable))
+    print("#################################")
+    print(growthTable[1,])
+    print("#################################")
+    print(growthTable[2,])
+    #mydf$FROM <- NA
+    #mydf$TO <- NA
+    #mydf[,4:5] <- strsplit(x=mydf$PERIOD, split="-")
+    return(mydf)
+    
+    #return(df)
+    #df[4,] <- as.numeric(strsplit(colnames(df), "-")[2])
+return(df)
 }

@@ -253,6 +253,10 @@ shinyServer(function(input, output, session) {
         }
     })
     
+    output$textalert <- renderTable({
+        expand_growth_table(computeGrowthTable())
+    })
+    
     updateInputs <- function(session, columns){
         updateSelectInput(session=session, inputId="idColumn",
                           choices=columns, selected="")
