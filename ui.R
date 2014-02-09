@@ -35,8 +35,7 @@ shinyUI(pageWithSidebar(
                  dataTableOutput('growthTable'),
                  tags$h4('Average yearly growth rate'),
                  plotOutput("growthPlot"),
-                 downloadButton(outputId="dlButton", label="Download table"),
-                 tableOutput("textalert")),
+                 downloadButton(outputId="dlButton", label="Download table"))
         tabPanel("Simulation",
                  numericInput(inputId="nbReplications", label="Number of replications", value=10, min=5, max=100, step=5 ),
                  tags$hr(),

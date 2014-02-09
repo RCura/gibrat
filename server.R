@@ -66,7 +66,6 @@ shinyServer(function(input, output, session) {
             nbReps <- isolate(input$nbReplications)
             print(nbReps)
             simData <- run_simulation(df=df, reps=nbReps)
-            dimnames(simData) <- list(rownames(df), colnames(df), paste("Sim", 1:nbReps, sep=""))
             return(simData)
         } else {
             return()
@@ -184,7 +183,7 @@ shinyServer(function(input, output, session) {
             polyX <- c(xLabels, rev(xLabels))
             polyY <- c((meanGrowth + sdGrowth), rev(meanGrowth - sdGrowth))
             plot(y=unlist(growthTable[1,]), x=colnames(calcData())[-1],
-                 ylim=c(minY, maxY), type="b", pch=4, col.points="black",
+                 ylim=c(minY, maxY), type="b", pch=4,
                  xlab="Year",
                  ylab="Growth (%)")
             polygon(polyX, polyY, col="blue", border = NA,density=50)
@@ -251,10 +250,6 @@ shinyServer(function(input, output, session) {
         } else {
             return()
         }
-    })
-    
-    output$textalert <- renderTable({
-        expand_growth_table(computeGrowthTable())
     })
     
     updateInputs <- function(session, columns){

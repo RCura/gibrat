@@ -35,11 +35,18 @@ compute_growthtable <- function (df)
 ############ RUN_SIMULATION ############
 run_simulation <- function (df, reps)
 {
-    growth_table <- compute_growthtable(df=df)
+    #growth_table1 <- compute_growthtable(df=df)
+    yearlyGT <- compute_yearly_growth_table(df)
+    growth_table <- expand_growth_table(yearlyGT)
+    
     simList <- mclapply(X=c(1:reps),function (x) run_replication(obs_data=df, growthtable=growth_table ), mc.cores=24)
     L <- length(simList)
     RC <- dim(simList[[1]])
     simArray <- array(unlist(simList), dim=c(RC[1], RC[2], L))
+    firstDate <- colnames(df)[1]
+    lastDate <- colnames(df)[length(colnames(df))]
+    
+    dimnames(simArray) <- list(rownames(df), (firstDate:lastDate) , paste("Sim", 1:reps, sep=""))
     return(simArray)
 }
 
@@ -125,19 +132,19 @@ compute_yearly_growth_table <- function(df)
 }
 
 expand_growth_table <- function(growthTable){
-    mydf <- data.frame(PERIOD=colnames(growthTable), MEAN=growthTable[1,], STDEV=growthTable[2,])
-    print("#################################")
-    print(colnames(growthTable))
-    print("#################################")
-    print(growthTable[1,])
-    print("#################################")
-    print(growthTable[2,])
-    #mydf$FROM <- NA
-    #mydf$TO <- NA
-    #mydf[,4:5] <- strsplit(x=mydf$PERIOD, split="-")
-    return(mydf)
+    periodNames <- colnames(growthTable)
+    indicatorNames <- row.names(growthTable)
+    tGrowthTable <- cbind.data.frame(periodNames,t(growthTable), stringsAsFactors=FALSE)
+    colnames(tGrowthTable) <- c("Period", indicatorNames)
+    tGrowthTable$FROM <- as.numeric(unlist(lapply(tGrowthTable$Period, FUN=function(x){abc <- strsplit(x, split="-") ; return(abc[[1]][[1]])})))
+    tGrowthTable$TO <- as.numeric(unlist(lapply(tGrowthTable$Period, FUN=function(x){abc <- strsplit(x, split="-") ; return(abc[[1]][[2]])})))
+    ### tGrowthTable is great there
     
-    #return(df)
-    #df[4,] <- as.numeric(strsplit(colnames(df), "-")[2])
-return(df)
+    expandedGrowthTable <- tGrowthTable[rep(1:nrow(tGrowthTable), (tGrowthTable$TO - tGrowthTable$FROM)),]
+    expandedGrowthTable$FROM <- (expandedGrowthTable$FROM[1]:(expandedGrowthTable$TO[nrow(expandedGrowthTable)] - 1))
+    expandedGrowthTable$TO <- expandedGrowthTable$FROM + 1
+    expandedGrowthTable$Period <- paste(expandedGrowthTable$FROM, expandedGrowthTable$TO, sep="-")
+    row.names(expandedGrowthTable) <- expandedGrowthTable$Period
+    expandedGrowthTable <- expandedGrowthTable[,-c(1,4,5)]
+    return(as.data.frame(t(expandedGrowthTable)))
 }
