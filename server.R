@@ -199,6 +199,7 @@ shinyServer(function(input, output, session) {
             indicatorNames <- row.names(growthTable)
             tGrowthTable <- cbind.data.frame(periodNames,t(growthTable))
             colnames(tGrowthTable) <- c("Period", indicatorNames)
+            #View(tGrowthTable)
             return(tGrowthTable)
         } else {
             return()

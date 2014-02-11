@@ -124,10 +124,11 @@ compute_yearly_growth_table <- function(df)
         }
     }
     growthratetable[] <- growthratetable_matrix[]
+    #View(growthratetable[1000:nrow(growthratetable), ])
     growthparameters <- growthratetable[1:2,]
     rownames(growthparameters) <- c("Annual Mean Growth (%)", "Annual Growth StDev (%)")
-    growthparameters[1,] <- apply(X=growthratetable, MARGIN=2, FUN=mean) # Calcul de la moyenne
-    growthparameters[2,] <- apply(X=growthratetable, MARGIN=2, FUN=sd) # Calcul de l'écart-type
+    growthparameters[1,] <- apply(X=growthratetable, MARGIN=2, FUN=function(x){return(mean(x, na.rm=TRUE))}) # Calcul de la moyenne
+    growthparameters[2,] <- apply(X=growthratetable, MARGIN=2, FUN=function(x){ return(sd(x, na.rm=TRUE))}) # Calcul de l'écart-type
     return(growthparameters)
 }
 
