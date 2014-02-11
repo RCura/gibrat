@@ -64,7 +64,6 @@ shinyServer(function(input, output, session) {
         if (!is.null(calcData()) && input$runSim > 0) {
             df <- calcData()
             nbReps <- isolate(input$nbReplications)
-            print(nbReps)
             simData <- run_simulation(df=df, reps=nbReps)
             return(simData)
         } else {
@@ -83,7 +82,7 @@ shinyServer(function(input, output, session) {
     
     simMeans <- reactive({
         if (!is.null(simulationsData())){
-            simMeans <- apply(X=simulationsData()[,,], 1:2, mean)
+            simMeans <- apply(X=simulationsData()[,,], 1:2, function(x){mean(x, na.rm=TRUE)})
             return(simMeans)
         } else {
             return()
@@ -92,7 +91,7 @@ shinyServer(function(input, output, session) {
     
     simSDs <- reactive({
         if (!is.null(simulationsData())){
-            simSDs <- apply(X=simulationsData()[,,], 1:2, sd)
+            simSDs <- apply(X=simulationsData()[,,], 1:2, function(x){return(sd(x, na.rm=TRUE))})
             return(simSDs)
         } else {
             return()
@@ -219,26 +218,32 @@ shinyServer(function(input, output, session) {
         }
     )
     
-    
     output$gibratRankSize <- renderPlot({
         if (is.null(simMeans())){ return()}
-        lastTime <- ncol(calcData())
-        maxpop <- max(max(calcData()[lastTime]),max(simulationsData()[,lastTime,]))
-        minpop <- min(min(calcData()[lastTime]),min(simulationsData()[,lastTime,]))
         
-        plot(x=sort(rank(-calcData()[,lastTime]), decreasing=T), y=sort(calcData()[,lastTime], decreasing=F), log="xy", type="l", ylim=c(minpop,maxpop), xlab="Rang", ylab="Population", col="darkblue", lwd=2)
+        lastTime <- ncol(calcData())
+        
+        cData <- na.omit(calcData()[,lastTime])
+        sData <- na.omit(simulationsData()[,lastTime,])
+        mData <- na.omit(simMeans()[,lastTime])
+        
+        maxpop <- max(max(cData),max(sData))
+        minpop <- min(min(cData),min(sData))
+        
+        plot(x=sort(rank(-cData), decreasing=T), y=sort(cData, decreasing=F), log="xy", type="l", ylim=c(minpop,maxpop), xlab="Rang", ylab="Population", col="darkblue", lwd=2)
         # Création du graphe pour toutes les sims :
-        for (i in 1:dim(simulationsData())[3])
+        for (i in 1:dim(sData)[2])
         {
-            lines(x=sort(rank(-simulationsData()[,lastTime,i]), decreasing=T), y=sort(simulationsData()[,lastTime,i], decreasing=F), col="darkgrey", lwd=1)
+            lines(x=sort(rank(-sData[,i]), decreasing=T), y=sort(sData[,i], decreasing=F), col="darkgrey", lwd=1)
         }
-        lines(x=sort(rank(-simMeans()[,lastTime]), decreasing=T), y=sort(simMeans()[,lastTime], decreasing=F), col="firebrick", lwd=2)
-        lines(x=sort(rank(-calcData()[,lastTime]), decreasing=T), y=sort(calcData()[,lastTime], decreasing=F), col="darkblue", lwd=2)
+        lines(x=sort(rank(mData), decreasing=T), y=sort(mData, decreasing=F), col="firebrick", lwd=2)
+        lines(x=sort(rank(-cData), decreasing=T), y=sort(cData, decreasing=F), col="darkblue", lwd=2)
         title("Courbes Rang-Taille observées et simulées en fin de période")
         legend(x="topright", "Observé", cex=0.7, seg.len=4, col="darkblue" , lty=1, lwd=2 )
         legend(x="bottomleft", "Simulées", cex=0.7, seg.len=4, col="darkgrey" , lty=1 )
         legend(x="bottomright", "Moyenne des simulations", cex=0.7, seg.len=4, col="firebrick" , lty=1, lwd=2 )
     })
+    
     
     
     output$correlationsFigures <- renderPrint({
