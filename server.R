@@ -1,5 +1,7 @@
 library(shiny)
 
+# TODO : Add a computation of correlation for each census date observed/ mean of simulated
+
 # Define server logic for random distribution application
 shinyServer(function(input, output, session) {
     
@@ -127,37 +129,6 @@ shinyServer(function(input, output, session) {
         }
     })
     
-    correlationMatrix <- reactive({
-        if (!is.null(simulationsData())){
-            correlationMatrix <- as.matrix(unlist(lapply(1:dim(simulationsData())[[3]],
-                                                         function (x) return(
-                                                             cor(log(calcData()[ncol(calcData())]),
-                                                                 y=log(simulationsData()[,ncol(calcData()),x]))))))
-            dimnames(correlationMatrix) <- dimnames(simulationsData())[3]
-            return(correlationMatrix)
-        } else {
-            return()
-        }
-    })
-    
-    rowCorrelationMatrix <- reactive({
-        if (!is.null(simulationsData())){
-            rowCorrelationMatrix <- matrix(data=unlist(lapply(
-                X=1:nrow(calcData()),
-                FUN= function (x) return(cor(x=simulationsData()[x,,1:dim(simulationsData())[[3]]],
-                                             y=as.double(calcData()[x,]),
-                                             use="pairwise.complete.obs",
-                                             method="spearman")))),
-                                           nrow=nrow(calcData()),
-                                           ncol=dim(simulationsData())[[3]],
-                                           byrow=TRUE,
-                                           dimnames=list(rownames(calcData()),
-                                                         colnames(simResults())))
-            return(rowCorrelationMatrix)
-        } else {
-            return()
-        }
-    })
     
     output$data <- renderDataTable({
         if (!is.null(calcData())) {
@@ -244,18 +215,39 @@ shinyServer(function(input, output, session) {
         legend(x="bottomright", "Moyenne des simulations", cex=0.7, seg.len=4, col="firebrick" , lty=1, lwd=2 )
     })
     
-    
-    
-    output$correlationsFigures <- renderPrint({
-        if (!is.null(correlationMatrix())){
-            "Corrélation ville obs/ville sim pour chaque réplication, résumé par réplication."
-            tags$hr()
-            summary(rowCorrelationMatrix())
-            tags$hr()
-            summary(rowCorrelationMatrix())
-        } else {
-            return()
-        }
+    output$correlations <- renderTable({
+        obs <- calcData()
+        reducedSim <- simMeans()[,colnames(obs)]
+        myCors <- as.vector(unlist(lapply(X=colnames(obs), FUN=function(x){
+            cor(sort(obs[,x]), y=sort(reducedSim[,x]))
+        })))
+        
+        myLogCors <- as.vector(unlist(lapply(X=colnames(obs), FUN=function(x){
+            cor(sort(log(obs[,x])), y=sort(log(reducedSim[,x])))
+        })))
+        
+        myObsSD <- as.vector(unlist(apply(X=obs, MARGIN=2, FUN=sd)))
+        mySimSD <- as.vector(unlist(apply(X=reducedSim, MARGIN=2, FUN=sd)))
+        myObsMean <- as.vector(unlist(apply(X=obs, MARGIN=2, FUN=mean)))
+        mySimMean <- as.vector(unlist(apply(X=reducedSim, MARGIN=2, FUN=mean)))
+        myObsSum <-  as.vector(unlist(apply(X=obs, MARGIN=2, FUN=sum)))
+        mySimSum <-  as.vector(unlist(apply(X=reducedSim, MARGIN=2, FUN=sum)))
+        
+        corTable <- data.frame(row.names=colnames(obs),
+                               Corr=myCors,
+                               LogCorr=myLogCors,
+                               ObsSum=myObsSum,
+                               SimSum=mySimSum,
+                               ObsMean=myObsMean,
+                               SimMean=mySimMean, 
+                               ObsSD=myObsSD,
+                               SimSD=mySimSD)
+        
+        # On supprime les dates non recensement
+        
+        # Corrélation entre villes observées triées(à chaque date de recensement) et moyenne des réplications (idem) triée.
+        # Idem en log
+        # A chaque date, écart-type (ou C.V ?) simulé/observé.
     })
     
     updateInputs <- function(session, columns){

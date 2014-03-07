@@ -45,7 +45,7 @@ shinyUI(pageWithSidebar(
                                            tags$img(src="loading-gif-animation.gif",height=50,width=50)),
                                   h4("Computation can be long, be patient...")),
                  plotOutput('gibratRankSize')),
-        #tabPanel("Correlations", htmlOutput('correlationsFigures')),
+        tabPanel("Correlations", tableOutput('correlations')),
         tabPanel("About", includeMarkdown(path="README.md"))
         
     )
