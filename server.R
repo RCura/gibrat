@@ -189,6 +189,14 @@ shinyServer(function(input, output, session) {
         }
     )
     
+    output$simresultDL <- downloadHandler(
+        filename = function() {paste(values$dataSource, "_simresults", ".csv", sep="")},
+        content = function(file){
+            exportDF <- simulationsData()[,ncol(calcData()),]
+            write.table(x=exportDF, file=file, sep=",", row.names=TRUE, col.names=TRUE, quote=TRUE)
+        }
+        )
+    
     output$gibratRankSize <- renderPlot({
         if (is.null(simMeans())){ return()}
         
