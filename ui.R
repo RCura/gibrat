@@ -23,8 +23,8 @@ shinyUI(pageWithSidebar(
                   accept=c('text/csv', 'text/comma-separated-values,text/plain', '.csv')),
         actionButton(inputId="testData", label="Load test dataset"),
         tags$hr(),
-        selectInput("idColumn", "ID", choices="", multiple=FALSE),
-        selectInput("timeColumnSelected", "Time columns :",choices="", multiple=TRUE)
+        selectInput("idColumn", "ID", choices="", multiple=FALSE, selectize=TRUE),
+        selectInput("timeColumnSelected", "Time columns :",choices="", multiple=TRUE, selectize=TRUE)
        
     ),
     mainPanel(
