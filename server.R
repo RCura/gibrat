@@ -193,7 +193,8 @@ shinyServer(function(input, output, session) {
         filename = function() {paste(values$dataSource, "_simresults", ".csv", sep="")},
         content = function(file){
             exportDF <- simulationsData()[,ncol(calcData()),]
-            write.table(x=exportDF, file=file, sep=",", row.names=TRUE, col.names=TRUE, quote=TRUE)
+            exportDF <- data.frame(ID=row.names(exportDF), exportDF)
+            write.table(x=exportDF, file=file, sep=",", row.names=FALSE, col.names=TRUE, quote=TRUE)
         }
         )
     
