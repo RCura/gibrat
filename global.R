@@ -117,9 +117,9 @@ compute_yearly_growth_table <- function(df)
         for (colnb in 1:ncol(growthratetable_matrix))
         {
             diffDate <- as.numeric(colnames(df_matrix)[colnb + 1]) - as.numeric(colnames(df_matrix)[colnb])
+            
             firstPop <- df_matrix[rownb, colnb]
             lastPop <- df_matrix[rownb, colnb + 1]
-            #growthratetable_matrix[rownb,colnb] <-  (lastPop / firstPop)^(1/diffDate - 1)
             growthratetable_matrix[rownb, colnb] <- ((lastPop / firstPop)^(1/diffDate) - 1) * 100
         }
     }

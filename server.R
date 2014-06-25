@@ -28,11 +28,12 @@ shinyServer(function(input, output, session) {
                              header=input$header,
                              check.names = FALSE)
         allColumns <- c("None", unlist(colnames(baseData)))
+        realColumns <- unlist(colnames(baseData[, sapply(baseData, is.numeric)]))
         
         if(csvPath == 'data/villesFr1831.csv'){
-            updateTestDataInputs(session, allColumns)
+            updateTestDataInputs(session, allColumns, realColumns)
         } else {
-            updateInputs(session, allColumns)
+            updateInputs(session, allColumns, realColumns)
         }
 
         return(baseData)   
@@ -44,7 +45,11 @@ shinyServer(function(input, output, session) {
             idColumn <- input$idColumn
             timeColumns <- input$timeColumnSelected
             calcData <- upload()[timeColumns]
+            calcMatrix <- as.matrix(calcData)
+            calcMatrix[calcMatrix == 0] <- NA
+            calcData <- as.data.frame(calcMatrix)
             row.names(calcData) <- unlist(upload()[idColumn])
+            
             return(calcData)
         } else {
             return()
@@ -259,12 +264,12 @@ shinyServer(function(input, output, session) {
         # A chaque date, écart-type (ou C.V ?) simulé/observé.
     })
     
-    updateInputs <- function(session, columns){
+    updateInputs <- function(session, columns, realColumns){
         updateSelectInput(session=session, inputId="idColumn",
                           choices=columns, selected="")
         
         updateSelectInput(session=session, inputId="timeColumnSelected",
-                          choices=columns, selected="")
+                          choices=realColumns, selected="")
     }
     
     updateTestDataInputs <- function(session, columns){
