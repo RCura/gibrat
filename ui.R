@@ -17,7 +17,11 @@ shinyUI(pageWithSidebar(
                      c(None='',
                        'Double Quote'='"',
                        'Single Quote'="'"),
-                     'Double Quote')
+                     'Double Quote'),
+            radioButtons('dec', 'Decimal',
+                         c(Comma=',',
+                           Point='.'),
+                           'Point')
             ),
         fileInput('csvInput', 'Choose CSV File',
                   accept=c('text/csv', 'text/comma-separated-values,text/plain', '.csv')),

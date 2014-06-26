@@ -26,6 +26,7 @@ shinyServer(function(input, output, session) {
                              quote=input$quote,
                              sep=input$sep,
                              header=input$header,
+                             dec=input$dec,
                              check.names = FALSE)
         allColumns <- c("None", unlist(colnames(baseData)))
         realColumns <- unlist(colnames(baseData[, sapply(baseData, is.numeric)]))
