@@ -273,12 +273,12 @@ shinyServer(function(input, output, session) {
                           choices=realColumns, selected="")
     }
     
-    updateTestDataInputs <- function(session, columns){
+    updateTestDataInputs <- function(session, columns, realColumns){
         updateSelectInput(session=session, inputId="idColumn",
                           choices=columns, selected=columns[2])
         
         updateSelectInput(session=session, inputId="timeColumnSelected",
-                          choices=columns, selected=columns[-c(1,2)])
+                          choices=realColumns, selected=columns[-c(1,2)])
     }
     
     
