@@ -1,4 +1,4 @@
-require(shiny)
+library(shiny)
 
 shinyUI(pageWithSidebar(
     #headerPanel("Gibrat Simulator"),

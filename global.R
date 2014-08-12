@@ -1,4 +1,4 @@
-require(parallel)
+library(parallel)
 
 
 ############ COMPUTE_GROWTHTABLE ############
