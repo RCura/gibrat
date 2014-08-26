@@ -1,6 +1,6 @@
-![](https://zenodo.org/badge/5733/RCura/gibrat.png) Gibrat
+Gibrat
 ======
-
+[![DOI](https://zenodo.org/badge/5733/RCura/gibrat.png)](http://dx.doi.org/10.5281/zenodo.11415)
 Gibrat pop growth simulator
 
 ### Use
