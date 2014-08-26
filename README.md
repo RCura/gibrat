@@ -1,4 +1,4 @@
-Gibrat
+![](https://zenodo.org/badge/5733/RCura/gibrat.png) Gibrat
 ======
 
 Gibrat pop growth simulator
