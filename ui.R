@@ -1,8 +1,7 @@
 library(shiny)
 
 shinyUI(pageWithSidebar(
-    #headerPanel("Gibrat Simulator"),
-    headerPanel("Gibrat Simulator"),
+    headerPanel("Gibrat Simulator", tags$head(includeScript("www/analytics.js"))),
     sidebarPanel(
         checkboxInput("csvSettings", "CSV Options", FALSE),
         conditionalPanel(
