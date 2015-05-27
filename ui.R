@@ -33,6 +33,7 @@ shinyUI(pageWithSidebar(
     mainPanel(
     tabsetPanel(
         tabPanel("Base data", dataTableOutput('data')),
+        tabPanel("Top 10", dataTableOutput('top10')),
         tabPanel("Growth",
                  tags$h4("Observed"),
                  dataTableOutput('growthTable'),

@@ -57,6 +57,8 @@ shinyServer(function(input, output, session) {
         }
     })
     
+    
+    
     computeGrowthTable <- reactive({
         if (!is.null(calcData())) {
             df <- calcData()
@@ -67,6 +69,23 @@ shinyServer(function(input, output, session) {
             return()
         }
     })
+    
+    exportTop10Table <- reactive({
+      if (!is.null(calcData())) {
+        df <- calcData()
+        CityNames <- rownames(df)
+        lastDate <- df[,ncol(df)]
+        beforelast <- df[,ncol(df)-1]
+        beforebeforelast <- df[,ncol(df)-2]
+        Top10Table = data.frame(CityNames, beforebeforelast, beforelast, lastDate)
+        Top10Table <-   Top10Table[rev(order(Top10Table[,ncol(Top10Table)])),]
+        colnames(Top10Table) <- c("Names", tail(names(df),3))
+        return(Top10Table)
+      } else {
+        return()
+      }
+      
+        })
     
     simulationsData <- reactive({
         if (!is.null(calcData()) && input$runSim > 0) {
@@ -229,6 +248,11 @@ shinyServer(function(input, output, session) {
         legend(x="bottomleft", "Simulées", cex=0.7, seg.len=4, col="darkgrey" , lty=1 )
         legend(x="bottomright", "Moyenne des simulations", cex=0.7, seg.len=4, col="firebrick" , lty=1, lwd=2 )
     })
+    
+    output$top10 <- renderDataTable({
+      exportTop10Table()
+    }, , options = list(iDisplayLength = 10))
+    
     
     output$correlations <- renderTable({
         obs <- calcData()
