@@ -1,5 +1,5 @@
 library(shiny)
-
+library(ggplot2)
 # TODO : Add a computation of correlation for each census date observed/ mean of simulated
 
 # Define server logic for random distribution application
@@ -263,8 +263,49 @@ shinyServer(function(input, output, session) {
       SizeClassTable <- aggregate(df[,c("N", "Pop")],
                         by = list(df$SizeClasses), FUN = sum, na.rm = T )
       colnames(SizeClassTable) <- c("SizeClass", "NumberOfCities", "TotalPopulation")
-      SizeClassTable$ProportionOfUrbanPopulation <- SizeClassTable$TotalPopulation / sum(SizeClassTable$TotalPopulation) * 100
+      SizeClassTable$ProportionOfUrbanPopulation <- SizeClassTable$TotalPopulation / sum(SizeClassTable$TotalPopulation) * 100      
+      Total <- c("Total", sum(SizeClassTable$NumberOfCities), sum(SizeClassTable$TotalPopulation), 100)
+      SizeClassTable <- rbind (SizeClassTable, Total)
       SizeClassTable
+    })
+    
+    output$plotZipf <- renderPlot({
+      df <- exportTop10Table()
+      dfZpif <- df
+      
+      if (input$date == "Last Census") datecol <- 4
+      if (input$date == "Last Census - 1") datecol <- 3
+      if (input$date == "Last Census - 2") datecol <- 2
+     
+      dfZpif$datepop <- dfZpif[,datecol]
+      dfZpif <- subset(dfZpif, datepop > 0)
+      
+      sizes <- dfZpif[order(-dfZpif$datepop) , ]
+      sizes <- sizes[,5]
+      ncities <- nrow(dfZpif)
+      ranks <- 1:ncities
+      zipf = data.frame(ranks, sizes)
+      colnames(zipf) <- c("ranks", "size")
+      dates <- rep(names(df)[[datecol]], ncities)
+      zipf = data.frame(zipf, dates)
+    
+    valBreaks=c(10000, 100000, 1000000, 10000000)
+    if ( input$thousands == TRUE) valBreaks = valBreaks / 1000
+    
+    p <-ggplot(zipf, aes(x=ranks, y=size)) 
+    p + scale_y_log10(breaks=valBreaks) +
+      scale_x_log10(breaks=c(1, 10, 100, 1000)) + 
+      xlab("Rank") + ylab("Size (Population)") +
+      geom_point(colour="aquamarine3") + geom_line(colour="aquamarine3", size = 2) +
+      theme(axis.text=element_text(size=12) ,
+           # axis.title=element_text(size=14),
+            axis.text.x = element_text(angle = 45, hjust = 1)#,
+            #ggtitle(paste("Zipf Plot in ", input$date, sep=""))
+            )
+    
+    })
+    
+    output$estimZipf <- renderTable({
     })
     
     output$correlations <- renderTable({
