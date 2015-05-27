@@ -24,6 +24,8 @@ shinyUI(pageWithSidebar(
             ),
         fileInput('csvInput', 'Choose CSV File',
                   accept=c('text/csv', 'text/comma-separated-values,text/plain', '.csv')),
+        checkboxInput('thousands', 'Population x 1000', FALSE),
+        
         actionButton(inputId="testData", label="Load test dataset"),
         tags$hr(),
         selectInput("idColumn", "ID", choices="", multiple=FALSE, selectize=TRUE),
@@ -34,6 +36,7 @@ shinyUI(pageWithSidebar(
     tabsetPanel(
         tabPanel("Base data", dataTableOutput('data')),
         tabPanel("Top 10", dataTableOutput('top10')),
+        tabPanel("City Size Classes", dataTableOutput('sizeClasses')),
         tabPanel("Growth",
                  tags$h4("Observed"),
                  dataTableOutput('growthTable'),

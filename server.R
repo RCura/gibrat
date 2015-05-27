@@ -253,6 +253,19 @@ shinyServer(function(input, output, session) {
       exportTop10Table()
     }, , options = list(iDisplayLength = 10))
     
+    output$sizeClasses <- renderDataTable({
+      df <- exportTop10Table()
+      valBreaks <- c(0, 10000, 50000, 100000, 500000, 1000000, 10000000, 1000000000)
+      if ( input$thousands == TRUE) valBreaks = valBreaks / 1000
+      df$Pop <- df[,4]
+      df$N <- 1
+      df$SizeClasses <- cut(df[,4],breaks = valBreaks, include.lowest = TRUE, right = FALSE)
+      SizeClassTable <- aggregate(df[,c("N", "Pop")],
+                        by = list(df$SizeClasses), FUN = sum, na.rm = T )
+      colnames(SizeClassTable) <- c("SizeClass", "NumberOfCities", "TotalPopulation")
+      SizeClassTable$ProportionOfUrbanPopulation <- SizeClassTable$TotalPopulation / sum(SizeClassTable$TotalPopulation) * 100
+      SizeClassTable
+    })
     
     output$correlations <- renderTable({
         obs <- calcData()
