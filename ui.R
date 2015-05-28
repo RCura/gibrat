@@ -44,7 +44,7 @@ shinyUI(pageWithSidebar(
                              multiple=FALSE, 
                              selected="Last Census"),
                  plotOutput('plotZipf'),
-                 dataTableOutput('estimZipf')),
+                 tableOutput('estimZipf')),
         tabPanel("Growth",
                  tags$h4("Observed"),
                  dataTableOutput('growthTable'),

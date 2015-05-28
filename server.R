@@ -6,6 +6,13 @@ library(ggplot2)
 shinyServer(function(input, output, session) {
     
     values <- reactiveValues(dataSource= 'none')
+    censusDate <- reactiveValues(datecol= NULL)
+    observe({
+      if (input$date == "Last Census") censusDate$datecol <- 4
+      if (input$date == "Last Census - 1") censusDate$datecol <- 3
+      if (input$date == "Last Census - 2") censusDate$datecol <- 2
+      
+    })
     
     observe({
         if (input$testData > 0){
@@ -87,6 +94,56 @@ shinyServer(function(input, output, session) {
       
         })
     
+    exportZipfTable <- reactive({
+      if (!is.null(exportTop10Table())) {
+        df <- exportTop10Table()
+    dfZpif <- df
+    
+    datecol <- censusDate$datecol
+
+    dfZpif$datepop <- dfZpif[,datecol]
+    dfZpif <- subset(dfZpif, datepop > 0)
+    
+    sizes <- dfZpif[order(-dfZpif$datepop) , ]
+    sizes <- sizes[,5]
+    ncities <- nrow(dfZpif)
+    ranks <- 1:ncities
+    zipf = data.frame(ranks, sizes)
+    colnames(zipf) <- c("ranks", "size")
+    dates <- rep(names(df)[[datecol]], ncities)
+    zipf = data.frame(zipf, dates)
+    return(zipf)
+} else {
+  return()
+}
+
+})
+    
+exportZipfResTable <- reactive({
+  if (!is.null(exportZipfTable())) {
+zipf <- exportZipfTable()  
+if (input$thousands == TRUE) zipfCut10 <- subset(zipf, size >= 10)
+if (input$thousands == FALSE) zipfCut10 <- subset(zipf, size >= 10000)
+if (input$thousands == TRUE) zipfCut100 <- subset(zipf, size >= 100)      
+if (input$thousands == FALSE) zipfCut100 <- subset(zipf, size >= 100000)      
+model10 <- lm(log(size) ~ log(ranks), data=zipfCut10, na.action=na.omit)
+ConfInt_model10 <- confint(model10)
+model100 <- lm(log(size) ~ log(ranks), data=zipfCut100, na.action=na.omit)
+ConfInt_model100 <- confint(model100)
+res10 = data.frame(model10$coefficients[[2]], ConfInt_model10[2,1], ConfInt_model10[2,2], summary(model10)$r.squared)
+colnames(res10) <- c("Estimated Zipf Exponent", "Lower bound", "Upper bound", "R squared")
+res100 = data.frame(model100$coefficients[[2]], ConfInt_model100[2,1], ConfInt_model100[2,2], summary(model100)$r.squared)
+colnames(res100) <- c("Estimated Zipf Exponent", "Lower bound", "Upper bound", "R squared")
+res = rbind(res10, res100)
+Estimation<- c("Population > 10000 hab.", "Population > 100000 hab.")
+res <- cbind(Estimation, res)
+return(res)
+} else {
+  return()
+}
+})
+
+
     simulationsData <- reactive({
         if (!is.null(calcData()) && input$runSim > 0) {
             df <- calcData()
@@ -253,6 +310,9 @@ shinyServer(function(input, output, session) {
       exportTop10Table()
     }, , options = list(iDisplayLength = 10))
     
+    
+    
+    
     output$sizeClasses <- renderDataTable({
       df <- exportTop10Table()
       valBreaks <- c(0, 10000, 50000, 100000, 500000, 1000000, 10000000, 1000000000)
@@ -270,24 +330,7 @@ shinyServer(function(input, output, session) {
     })
     
     output$plotZipf <- renderPlot({
-      df <- exportTop10Table()
-      dfZpif <- df
-      
-      if (input$date == "Last Census") datecol <- 4
-      if (input$date == "Last Census - 1") datecol <- 3
-      if (input$date == "Last Census - 2") datecol <- 2
-     
-      dfZpif$datepop <- dfZpif[,datecol]
-      dfZpif <- subset(dfZpif, datepop > 0)
-      
-      sizes <- dfZpif[order(-dfZpif$datepop) , ]
-      sizes <- sizes[,5]
-      ncities <- nrow(dfZpif)
-      ranks <- 1:ncities
-      zipf = data.frame(ranks, sizes)
-      colnames(zipf) <- c("ranks", "size")
-      dates <- rep(names(df)[[datecol]], ncities)
-      zipf = data.frame(zipf, dates)
+      zipf <- exportZipfTable()
     
     valBreaks=c(10000, 100000, 1000000, 10000000)
     if ( input$thousands == TRUE) valBreaks = valBreaks / 1000
@@ -301,12 +344,14 @@ shinyServer(function(input, output, session) {
            # axis.title=element_text(size=14),
             axis.text.x = element_text(angle = 45, hjust = 1)#,
             #ggtitle(paste("Zipf Plot in ", input$date, sep=""))
-            )
-    
+            ) 
     })
     
+
+
     output$estimZipf <- renderTable({
-    })
+      exportZipfResTable()  
+    },digits = 3)
     
     output$correlations <- renderTable({
         obs <- calcData()
