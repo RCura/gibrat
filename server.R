@@ -1,5 +1,6 @@
 library(shiny)
 library(ggplot2)
+library(MASS)
 # TODO : Add a computation of correlation for each census date observed/ mean of simulated
 
 # Define server logic for random distribution application
@@ -117,6 +118,24 @@ shinyServer(function(input, output, session) {
   return()
 }
 
+})
+
+
+exportLogNormalTable <- reactive({
+  if (!is.null(exportTop10Table())) {
+    df <- exportTop10Table()
+    dfLG <- df
+    
+    datecol <- censusDate$datecol
+    
+    dfLG$datepop <- dfLG[,datecol]
+    dfLG <- subset(dfLG, datepop > 0)
+    
+    return(dfLG)
+  } else {
+    return()
+  }
+  
 })
     
 exportZipfResTable <- reactive({
@@ -353,6 +372,19 @@ return(res)
       exportZipfResTable()  
     },digits = 3)
     
+
+
+output$plotLognormal <- renderPlot({
+  pops <- exportLogNormalTable()
+  require(MASS)
+  LogPopulations <- log(pops$datepop)
+  hist(LogPopulations, col="aquamarine3", freq=F)
+  fit<-fitdistr(LogPopulations,"log-normal")$estimate
+  lines(dlnorm(0:max(LogPopulations),fit[1],fit[2]), lwd=3)  
+  })
+
+
+
     output$correlations <- renderTable({
         obs <- calcData()
         reducedSim <- simMeans()[,colnames(obs)]
@@ -387,6 +419,8 @@ return(res)
         # Idem en log
         # A chaque date, écart-type (ou C.V ?) simulé/observé.
     })
+
+
     
     updateInputs <- function(session, columns, realColumns){
         updateSelectInput(session=session, inputId="idColumn",
