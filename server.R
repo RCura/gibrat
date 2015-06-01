@@ -1,6 +1,7 @@
 library(shiny)
 library(ggplot2)
 library(MASS)
+library(poweRlaw)
 # TODO : Add a computation of correlation for each census date observed/ mean of simulated
 
 # Define server logic for random distribution application
@@ -376,13 +377,28 @@ return(res)
 
 output$plotLognormal <- renderPlot({
   pops <- exportLogNormalTable()
-  require(MASS)
   LogPopulations <- log(pops$datepop)
-  hist(LogPopulations, col="aquamarine3", freq=F)
+   hist(LogPopulations, col="aquamarine3", freq=F)
   fit<-fitdistr(LogPopulations,"log-normal")$estimate
   lines(dlnorm(0:max(LogPopulations),fit[1],fit[2]), lwd=3)  
   })
 
+output$estimLognormal <- renderTable({
+  pops <- exportLogNormalTable()
+  Populations <- as.data.frame(sort(pops$datepop,decreasing = TRUE))
+  colnames(Populations) <- c("Pop")
+ # Populations
+  ln_m <- dislnorm$new(Populations$Pop)
+  est_ln <- estimate_xmin(ln_m)
+  ln_m$setXmin(est_ln)
+ 
+ ln_estim = data.frame(matrix(ncol = 3, nrow = 1))
+  ln_estim[1,1] <- ln_m$pars[[1]]
+ ln_estim[1,2] <- ln_m$pars[[2]]
+ ln_estim[1,3] <- ln_m$xmin
+ colnames(ln_estim) <- c("Mean", "Standard Deviation", "X min")
+ ln_estim
+})
 
 
     output$correlations <- renderTable({
