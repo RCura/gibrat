@@ -1,11 +1,20 @@
 library(shiny)
-
+library(ggplot2)
+library(MASS)
+library(poweRlaw)
 # TODO : Add a computation of correlation for each census date observed/ mean of simulated
 
 # Define server logic for random distribution application
 shinyServer(function(input, output, session) {
     
     values <- reactiveValues(dataSource= 'none')
+    censusDate <- reactiveValues(datecol= NULL)
+    observe({
+      if (input$date == "Last Census") censusDate$datecol <- 4
+      if (input$date == "Last Census - 1") censusDate$datecol <- 3
+      if (input$date == "Last Census - 2") censusDate$datecol <- 2
+      
+    })
     
     observe({
         if (input$testData > 0){
@@ -57,6 +66,8 @@ shinyServer(function(input, output, session) {
         }
     })
     
+    
+    
     computeGrowthTable <- reactive({
         if (!is.null(calcData())) {
             df <- calcData()
@@ -68,6 +79,121 @@ shinyServer(function(input, output, session) {
         }
     })
     
+    exportTop10Table <- reactive({
+      if (!is.null(calcData())) {
+        df <- calcData()
+        CityNames <- rownames(df)
+        lastDate <- df[,ncol(df)]
+        beforelast <- df[,ncol(df)-1]
+        beforebeforelast <- df[,ncol(df)-2]
+        Top10Table = data.frame(CityNames, beforebeforelast, beforelast, lastDate)
+        Top10Table <-   Top10Table[rev(order(Top10Table[,ncol(Top10Table)])),]
+        colnames(Top10Table) <- c("Names", tail(names(df),3))
+        return(Top10Table)
+      } else {
+        return()
+      }
+      
+        })
+    
+    exportZipfTable <- reactive({
+      if (!is.null(exportTop10Table())) {
+        df <- exportTop10Table()
+    dfZpif <- df
+    
+    datecol <- censusDate$datecol
+
+    dfZpif$datepop <- dfZpif[,datecol]
+    dfZpif <- subset(dfZpif, datepop > 0)
+    
+    sizes <- dfZpif[order(-dfZpif$datepop) , ]
+    sizes <- sizes[,5]
+    ncities <- nrow(dfZpif)
+    ranks <- 1:ncities
+    zipf = data.frame(ranks, sizes)
+    colnames(zipf) <- c("ranks", "size")
+    dates <- rep(names(df)[[datecol]], ncities)
+    zipf = data.frame(zipf, dates)
+    return(zipf)
+} else {
+  return()
+}
+
+})
+
+exportTransitionMatrix <- reactive ({
+  
+  if (!is.null(exportTop10Table())) {
+    df <- exportTop10Table()
+      
+    if (input$datefinal == "Last Census") final <- 4
+    if (input$datefinal == "Last Census - 1") final <- 3
+    if (input$datefinal == "Last Census - 2") final <- 2
+    
+    if (input$dateinitial == "Last Census") initial <- 4
+    if (input$dateinitial == "Last Census - 1") initial <- 3
+    if (input$dateinitial == "Last Census - 2") initial <- 2
+    
+    valBreaks <- c(0, 10000, 50000, 100000, 500000, 1000000, 10000000, 1000000000)
+    if ( input$thousands == TRUE) valBreaks = valBreaks / 1000
+    
+    FinalPops <- df[,final]
+    InitialPops <- df[,initial]
+    FinalDate <- cut(x=FinalPops,breaks=valBreaks, include.lowest = TRUE, right = FALSE) 
+    InitialDate <- cut(x=InitialPops,breaks=valBreaks, include.lowest = TRUE, right = FALSE) 
+      
+    transitionMatrix <- table(InitialDate,FinalDate)
+    
+    return(transitionMatrix)
+  } else {
+    return()
+  }
+  
+})
+
+
+exportLogNormalTable <- reactive({
+  if (!is.null(exportTop10Table())) {
+    df <- exportTop10Table()
+    dfLG <- df
+    
+    datecol <- censusDate$datecol
+    
+    dfLG$datepop <- dfLG[,datecol]
+    dfLG <- subset(dfLG, datepop > 0)
+    
+    return(dfLG)
+  } else {
+    return()
+  }
+  
+})
+    
+exportZipfResTable <- reactive({
+  if (!is.null(exportZipfTable())) {
+zipf <- exportZipfTable()  
+if (input$thousands == TRUE) zipfCut10 <- subset(zipf, size >= 10)
+if (input$thousands == FALSE) zipfCut10 <- subset(zipf, size >= 10000)
+if (input$thousands == TRUE) zipfCut100 <- subset(zipf, size >= 100)      
+if (input$thousands == FALSE) zipfCut100 <- subset(zipf, size >= 100000)      
+model10 <- lm(log(size) ~ log(ranks), data=zipfCut10, na.action=na.omit)
+ConfInt_model10 <- confint(model10)
+model100 <- lm(log(size) ~ log(ranks), data=zipfCut100, na.action=na.omit)
+ConfInt_model100 <- confint(model100)
+res10 = data.frame(model10$coefficients[[2]], ConfInt_model10[2,1], ConfInt_model10[2,2], summary(model10)$r.squared)
+colnames(res10) <- c("Estimated Zipf Exponent", "Lower bound", "Upper bound", "R squared")
+res100 = data.frame(model100$coefficients[[2]], ConfInt_model100[2,1], ConfInt_model100[2,2], summary(model100)$r.squared)
+colnames(res100) <- c("Estimated Zipf Exponent", "Lower bound", "Upper bound", "R squared")
+res = rbind(res10, res100)
+Estimation<- c("Population > 10000 hab.", "Population > 100000 hab.")
+res <- cbind(Estimation, res)
+return(res)
+} else {
+  return()
+}
+})
+
+
     simulationsData <- reactive({
         if (!is.null(calcData()) && input$runSim > 0) {
             df <- calcData()
@@ -230,6 +356,83 @@ shinyServer(function(input, output, session) {
         legend(x="bottomright", "Moyenne des simulations", cex=0.7, seg.len=4, col="firebrick" , lty=1, lwd=2 )
     })
     
+    output$top10 <- renderDataTable({
+      exportTop10Table()
+    }, , options = list(iDisplayLength = 10))
+    
+    
+    output$sizeClasses <- renderDataTable({
+      df <- exportTop10Table()
+      datecol <- censusDate$datecol
+      valBreaks <- c(0, 10000, 50000, 100000, 500000, 1000000, 10000000, 1000000000)
+      if ( input$thousands == TRUE) valBreaks = valBreaks / 1000
+      df$Pop <- df[,datecol]
+      df$N <- 1
+      df$SizeClasses <- cut(df[,datecol],breaks = valBreaks, include.lowest = TRUE, right = FALSE)
+      SizeClassTable <- aggregate(df[,c("N", "Pop")],
+                        by = list(df$SizeClasses), FUN = sum, na.rm = T )
+      colnames(SizeClassTable) <- c("SizeClass", "NumberOfCities", "TotalPopulation")
+      SizeClassTable$ProportionOfUrbanPopulation <- SizeClassTable$TotalPopulation / sum(SizeClassTable$TotalPopulation) * 100      
+      Total <- c("Total", sum(SizeClassTable$NumberOfCities), sum(SizeClassTable$TotalPopulation), 100)
+      SizeClassTable <- rbind (SizeClassTable, Total)
+      SizeClassTable
+    })
+    
+    output$plotZipf <- renderPlot({
+      zipf <- exportZipfTable()
+    
+    valBreaks=c(10000, 100000, 1000000, 10000000)
+    if ( input$thousands == TRUE) valBreaks = valBreaks / 1000
+    
+    p <-ggplot(zipf, aes(x=ranks, y=size)) 
+    p + scale_y_log10(breaks=valBreaks) +
+      scale_x_log10(breaks=c(1, 10, 100, 1000)) + 
+      xlab("Rank") + ylab("Size (Population)") +
+      geom_point(colour="aquamarine3") + geom_line(colour="aquamarine3", size = 2) +
+      theme(axis.text=element_text(size=12) ,
+           # axis.title=element_text(size=14),
+            axis.text.x = element_text(angle = 45, hjust = 1)#,
+            #ggtitle(paste("Zipf Plot in ", input$date, sep=""))
+            ) 
+    })
+    
+
+
+    output$estimZipf <- renderTable({
+      exportZipfResTable()  
+    },digits = 3)
+    
+
+
+output$plotLognormal <- renderPlot({
+  pops <- exportLogNormalTable()
+  LogPopulations <- log(pops$datepop)
+   hist(LogPopulations, col="aquamarine3", freq=F)
+  fit<-fitdistr(LogPopulations,"log-normal")$estimate
+  lines(dlnorm(0:max(LogPopulations),fit[1],fit[2]), lwd=3)  
+  })
+
+output$estimLognormal <- renderTable({
+  pops <- exportLogNormalTable()
+  Populations <- as.data.frame(sort(pops$datepop,decreasing = TRUE))
+  colnames(Populations) <- c("Pop")
+ # Populations
+  ln_m <- dislnorm$new(Populations$Pop)
+  est_ln <- estimate_xmin(ln_m)
+  ln_m$setXmin(est_ln)
+ 
+ ln_estim = data.frame(matrix(ncol = 3, nrow = 1))
+  ln_estim[1,1] <- ln_m$pars[[1]]
+ ln_estim[1,2] <- ln_m$pars[[2]]
+ ln_estim[1,3] <- ln_m$xmin
+ colnames(ln_estim) <- c("Mean", "Standard Deviation", "X min")
+ ln_estim
+})
+
+output$transitionMatrix <- renderTable({
+  exportTransitionMatrix()
+})  
+  
     output$correlations <- renderTable({
         obs <- calcData()
         reducedSim <- simMeans()[,colnames(obs)]
@@ -264,6 +467,8 @@ shinyServer(function(input, output, session) {
         # Idem en log
         # A chaque date, écart-type (ou C.V ?) simulé/observé.
     })
+
+
     
     updateInputs <- function(session, columns, realColumns){
         updateSelectInput(session=session, inputId="idColumn",
