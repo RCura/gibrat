@@ -121,6 +121,36 @@ shinyServer(function(input, output, session) {
 
 })
 
+exportTransitionMatrix <- reactive ({
+  
+  if (!is.null(exportTop10Table())) {
+    df <- exportTop10Table()
+      
+    if (input$datefinal == "Last Census") final <- 4
+    if (input$datefinal == "Last Census - 1") final <- 3
+    if (input$datefinal == "Last Census - 2") final <- 2
+    
+    if (input$dateinitial == "Last Census") initial <- 4
+    if (input$dateinitial == "Last Census - 1") initial <- 3
+    if (input$dateinitial == "Last Census - 2") initial <- 2
+    
+    valBreaks <- c(0, 10000, 50000, 100000, 500000, 1000000, 10000000, 1000000000)
+    if ( input$thousands == TRUE) valBreaks = valBreaks / 1000
+    
+    FinalPops <- df[,final]
+    InitialPops <- df[,initial]
+    FinalDate <- cut(x=FinalPops,breaks=valBreaks, include.lowest = TRUE, right = FALSE) 
+    InitialDate <- cut(x=InitialPops,breaks=valBreaks, include.lowest = TRUE, right = FALSE) 
+      
+    transitionMatrix <- table(InitialDate,FinalDate)
+    
+    return(transitionMatrix)
+  } else {
+    return()
+  }
+  
+})
+
 
 exportLogNormalTable <- reactive({
   if (!is.null(exportTop10Table())) {
@@ -331,8 +361,6 @@ return(res)
     }, , options = list(iDisplayLength = 10))
     
     
-    
-    
     output$sizeClasses <- renderDataTable({
       df <- exportTop10Table()
       datecol <- censusDate$datecol
@@ -401,7 +429,10 @@ output$estimLognormal <- renderTable({
  ln_estim
 })
 
-
+output$transitionMatrix <- renderTable({
+  exportTransitionMatrix()
+})  
+  
     output$correlations <- renderTable({
         obs <- calcData()
         reducedSim <- simMeans()[,colnames(obs)]
