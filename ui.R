@@ -36,7 +36,11 @@ shinyUI(pageWithSidebar(
     tabsetPanel(
         tabPanel("Base data", dataTableOutput('data')),
         tabPanel("Top 10", dataTableOutput('top10')),
-        tabPanel("City Size Classes", dataTableOutput('sizeClasses')),
+        tabPanel("City Size Classes", 
+                 selectInput("date", "Date", choices=c("Last Census",
+                                                       "Last Census - 1",
+                                                       "Last Census - 2")), 
+                  dataTableOutput('sizeClasses')),
         tabPanel("Zipf", 
                  selectInput("date", "Date", choices=c("Last Census",
                                                        "Last Census - 1",
@@ -45,7 +49,7 @@ shinyUI(pageWithSidebar(
                              selected="Last Census"),
                  plotOutput('plotZipf'),
                  h3("Parameters of a fitted power-law distribution"),
-                 dataTableOutput('estimZipf')),
+                 tableOutput('estimZipf')),
         tabPanel("LogNormal", 
                  selectInput("date", "Date", choices=c("Last Census",
                                                        "Last Census - 1",
@@ -56,8 +60,8 @@ shinyUI(pageWithSidebar(
                  h3("Parameters of a fitted lognormal distribution"),
                  tableOutput('estimLognormal'),
                  h4("Computation can be long, be patient..."),
-                h5("cf. Gillespie C. S., 2015, Fitting heavy tailed distributions : 
-                 the poweRlaw package, Journal of Statistical Software, Vol. 64, Issue 2.")),
+                "cf. Gillespie C. S., 2015, Fitting heavy tailed distributions : 
+                 the poweRlaw package, Journal of Statistical Software, Vol. 64, Issue 2."),
         tabPanel("Growth",
                  tags$h4("Observed"),
                  dataTableOutput('growthTable'),
