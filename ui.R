@@ -3,32 +3,10 @@ library(shiny)
 shinyUI(pageWithSidebar(
     headerPanel("Gibrat Simulator", tags$head(includeScript("www/analytics.js"))),
     sidebarPanel(
-        checkboxInput("csvSettings", "CSV Options", FALSE),
-        conditionalPanel(
-            condition="input.csvSettings == true",
-            checkboxInput('header', 'Header', TRUE),
-            radioButtons('sep', 'Separator',
-                     c(Comma=',',
-                       Semicolon=';',
-                       Tab='\t'),
-                     'Comma'),
-            radioButtons('quote', 'Quote',
-                     c(None='',
-                       'Double Quote'='"',
-                       'Single Quote'="'"),
-                     'Double Quote'),
-            radioButtons('dec', 'Decimal',
-                         c(Comma=',',
-                           Point='.'),
-                           'Point')
-            ),
-        fileInput('csvInput', 'Choose CSV File',
-                  accept=c('text/csv', 'text/comma-separated-values,text/plain', '.csv')),
-        checkboxInput('thousands', 'Population x 1000', FALSE),
-        
-        actionButton(inputId="testData", label="Load test dataset"),
+        selectInput(inputId = 'dataset', label = "Choose country",
+                    multiple = FALSE,
+                    choices = c("South Africa", "Brazil", "Russia", "India", "China", "USA", "France")),
         tags$hr(),
-        selectInput("idColumn", "ID", choices="", multiple=FALSE, selectize=TRUE),
         selectInput("timeColumnSelected", "Time columns :",choices="", multiple=TRUE, selectize=TRUE)
        
     ),

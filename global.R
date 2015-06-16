@@ -2,9 +2,11 @@ library(parallel)
 
 
 ############ COMPUTE_GROWTHTABLE ############
-compute_growthtable <- function (df)
+
+compute_yearly_growth_table <- function(df)
 {
     growthratetable <- df[1:ncol(df)-1]
+    # Creation des noms de périodes
     for (i in 1:ncol(growthratetable))
     {
         t0_name <- colnames(df[i])
@@ -21,21 +23,43 @@ compute_growthtable <- function (df)
     {
         for (colnb in 1:ncol(growthratetable_matrix))
         {
-            growthratetable_matrix[rownb,colnb] <-  ( (df_matrix[rownb, colnb + 1] - df_matrix[rownb, colnb])/df_matrix[rownb, colnb]) * 100
+            diffDate <- as.numeric(colnames(df_matrix)[colnb + 1]) - as.numeric(colnames(df_matrix)[colnb])
+            
+            firstPop <- df_matrix[rownb, colnb]
+            lastPop <- df_matrix[rownb, colnb + 1]
+            growthratetable_matrix[rownb, colnb] <- ((lastPop / firstPop)^(1/diffDate) - 1) * 100
         }
     }
     growthratetable[] <- growthratetable_matrix[]
+    #View(growthratetable[1000:nrow(growthratetable), ])
     growthparameters <- growthratetable[1:2,]
-    rownames(growthparameters) <- c("Mean Growth (%)", "Growth StDev (%)")
-    growthparameters[1,] <- apply(X=growthratetable, MARGIN=2, FUN=mean) # Calcul de la moyenne
-    growthparameters[2,] <- apply(X=growthratetable, MARGIN=2, FUN=sd) # Calcul de l'écart-type
+    rownames(growthparameters) <- c("Annual Mean Growth (%)", "Annual Growth StDev (%)")
+    growthparameters[1,] <- apply(X=growthratetable, MARGIN=2, FUN=function(x){return(mean(x, na.rm=TRUE))}) # Calcul de la moyenne
+    growthparameters[2,] <- apply(X=growthratetable, MARGIN=2, FUN=function(x){ return(sd(x, na.rm=TRUE))}) # Calcul de l'écart-type
     return(growthparameters)
+}
+
+expand_growth_table <- function(growthTable){
+    periodNames <- colnames(growthTable)
+    indicatorNames <- row.names(growthTable)
+    tGrowthTable <- cbind.data.frame(periodNames,t(growthTable), stringsAsFactors=FALSE)
+    colnames(tGrowthTable) <- c("Period", indicatorNames)
+    tGrowthTable$FROM <- as.numeric(unlist(lapply(tGrowthTable$Period, FUN=function(x){abc <- strsplit(x, split="-") ; return(abc[[1]][[1]])})))
+    tGrowthTable$TO <- as.numeric(unlist(lapply(tGrowthTable$Period, FUN=function(x){abc <- strsplit(x, split="-") ; return(abc[[1]][[2]])})))
+    ### tGrowthTable is great there
+    
+    expandedGrowthTable <- tGrowthTable[rep(1:nrow(tGrowthTable), (tGrowthTable$TO - tGrowthTable$FROM)),]
+    expandedGrowthTable$FROM <- (expandedGrowthTable$FROM[1]:(expandedGrowthTable$TO[nrow(expandedGrowthTable)] - 1))
+    expandedGrowthTable$TO <- expandedGrowthTable$FROM + 1
+    expandedGrowthTable$Period <- paste(expandedGrowthTable$FROM, expandedGrowthTable$TO, sep="-")
+    row.names(expandedGrowthTable) <- expandedGrowthTable$Period
+    expandedGrowthTable <- expandedGrowthTable[,-c(1,4,5)]
+    return(as.data.frame(t(expandedGrowthTable)))
 }
 
 ############ RUN_SIMULATION ############
 run_simulation <- function (df, reps)
 {
-    #growth_table1 <- compute_growthtable(df=df)
     yearlyGT <- compute_yearly_growth_table(df)
     growth_table <- expand_growth_table(yearlyGT)
     
@@ -93,59 +117,4 @@ create_rank_tables <- function (obsdata, simMean)
     simRank[] <- simRank_matrix[]
     obsRank[] <- obsRank_matrix[]
     return(list(simRank, obsRank))
-}
-
-
-compute_yearly_growth_table <- function(df)
-{
-    growthratetable <- df[1:ncol(df)-1]
-    # Creation des noms de périodes
-    for (i in 1:ncol(growthratetable))
-    {
-        t0_name <- colnames(df[i])
-        t1_name <- colnames(df[i+1])
-        myname <- as.character(paste(t0_name, t1_name, sep="-"))
-        colnames(growthratetable)[i] <- myname
-    }
-    growthratetable[,] <- NA
-    growthratetable_matrix <- as.matrix(growthratetable)
-    df_matrix <- as.matrix(df)
-    
-    # On le remplit avec les taux de croissance
-    for (rownb in 1:nrow(growthratetable_matrix))
-    {
-        for (colnb in 1:ncol(growthratetable_matrix))
-        {
-            diffDate <- as.numeric(colnames(df_matrix)[colnb + 1]) - as.numeric(colnames(df_matrix)[colnb])
-            
-            firstPop <- df_matrix[rownb, colnb]
-            lastPop <- df_matrix[rownb, colnb + 1]
-            growthratetable_matrix[rownb, colnb] <- ((lastPop / firstPop)^(1/diffDate) - 1) * 100
-        }
-    }
-    growthratetable[] <- growthratetable_matrix[]
-    #View(growthratetable[1000:nrow(growthratetable), ])
-    growthparameters <- growthratetable[1:2,]
-    rownames(growthparameters) <- c("Annual Mean Growth (%)", "Annual Growth StDev (%)")
-    growthparameters[1,] <- apply(X=growthratetable, MARGIN=2, FUN=function(x){return(mean(x, na.rm=TRUE))}) # Calcul de la moyenne
-    growthparameters[2,] <- apply(X=growthratetable, MARGIN=2, FUN=function(x){ return(sd(x, na.rm=TRUE))}) # Calcul de l'écart-type
-    return(growthparameters)
-}
-
-expand_growth_table <- function(growthTable){
-    periodNames <- colnames(growthTable)
-    indicatorNames <- row.names(growthTable)
-    tGrowthTable <- cbind.data.frame(periodNames,t(growthTable), stringsAsFactors=FALSE)
-    colnames(tGrowthTable) <- c("Period", indicatorNames)
-    tGrowthTable$FROM <- as.numeric(unlist(lapply(tGrowthTable$Period, FUN=function(x){abc <- strsplit(x, split="-") ; return(abc[[1]][[1]])})))
-    tGrowthTable$TO <- as.numeric(unlist(lapply(tGrowthTable$Period, FUN=function(x){abc <- strsplit(x, split="-") ; return(abc[[1]][[2]])})))
-    ### tGrowthTable is great there
-    
-    expandedGrowthTable <- tGrowthTable[rep(1:nrow(tGrowthTable), (tGrowthTable$TO - tGrowthTable$FROM)),]
-    expandedGrowthTable$FROM <- (expandedGrowthTable$FROM[1]:(expandedGrowthTable$TO[nrow(expandedGrowthTable)] - 1))
-    expandedGrowthTable$TO <- expandedGrowthTable$FROM + 1
-    expandedGrowthTable$Period <- paste(expandedGrowthTable$FROM, expandedGrowthTable$TO, sep="-")
-    row.names(expandedGrowthTable) <- expandedGrowthTable$Period
-    expandedGrowthTable <- expandedGrowthTable[,-c(1,4,5)]
-    return(as.data.frame(t(expandedGrowthTable)))
 }

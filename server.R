@@ -7,7 +7,30 @@ library(poweRlaw)
 # Define server logic for random distribution application
 shinyServer(function(input, output, session) {
     
-    values <- reactiveValues(dataSource= 'none')
+    load("data/countriesPop.RData")
+    
+    dataValues <- reactiveValues(rawDF = NULL,
+                             timeDF = NULL,
+                             calcDF = NULL,
+                             growthTable = NULL)
+    
+    computedValues <- reactiveValues(simData = NULL,
+                                     simResults = NULL,
+                                     simMeans = NULL,
+                                     simSDs = NULL,
+                                     meanRanks = NULL,
+                                     simRanks = NULL,
+                                     obsRanks = NULL)
+    
+    analysisValues <- reactiveValues(top10Table = NULL,
+                                     zipfTable = NULL,
+                                     transitionMatrix = NULL,
+                                     logNormalTable = NULL,
+                                     zipfResTable = NULL
+                                     )
+    
+
+    
     censusDate <- reactiveValues(datecol= NULL)
     observe({
       if (input$date == "Last Census") censusDate$datecol <- 4
@@ -17,88 +40,60 @@ shinyServer(function(input, output, session) {
     })
     
     observe({
-        if (input$testData > 0){
-            values$dataSource <- "data/villesFr1831.csv"
+        countryName <- input$dataset
+        if (countryName ==  "Brazil") {
+            dataValues$rawDF <- Brazil
+        } else if (countryName ==  "Russia") {
+            dataValues$rawDF <- Russia
+        } else  if (countryName ==  "India"){
+            dataValues$rawDF <- India
+        }  else if (countryName ==  "China"){
+            dataValues$rawDF <- China
+        } else  if (countryName ==  "South Africa"){
+            dataValues$rawDF <- SouthAfrica
+        } else if (countryName ==  "USA"){
+            dataValues$rawDF <- USA
+        } else  {
+            dataValues$rawDF <- France 
+        }
+
+        timeColumns <- as.numeric(na.omit(as.numeric(unlist(colnames(dataValues$rawDF)))))
+        allColumns <- c("None", unlist(colnames(dataValues$rawDF)))
+        updateInputs(session, allColumns, timeColumns)
+        
+    })
+        
+    observe({
+        timeColumns <- input$timeColumnSelected
+        if (!is.null(timeColumns) && timeColumns %in% names(dataValues$rawDF)){
+            calcData <- dataValues$rawDF[timeColumns]
+            row.names(calcData) <- unlist(dataValues$rawDF$ID)
+            dataValues$calcDF <- calcData
         }
     })
     
     observe({
-        if (!is.null(input$csvInput)){
-            values$dataSource <- input$csvInput$datapath
+        if (!is.null(dataValues$calcDF)) {
+            dataValues$growthTable <- compute_yearly_growth_table(dataValues$calcDF)
         }
     })
     
-    upload <- reactive({
-        csvPath <- values$dataSource
-        if(csvPath == 'none'){return()}
-        baseData <- read.csv(file=csvPath,
-                             quote=input$quote,
-                             sep=input$sep,
-                             header=input$header,
-                             dec=input$dec,
-                             check.names = FALSE)
-        allColumns <- c("None", unlist(colnames(baseData)))
-        realColumns <- unlist(colnames(baseData[, sapply(baseData, is.numeric)]))
-        
-        if(csvPath == 'data/villesFr1831.csv'){
-            updateTestDataInputs(session, allColumns, realColumns)
-        } else {
-            updateInputs(session, allColumns, realColumns)
-        }
-
-        return(baseData)   
-    })
-    
-    
-    calcData <- reactive({
-        if (!is.null(upload())){
-            idColumn <- input$idColumn
-            timeColumns <- input$timeColumnSelected
-            calcData <- upload()[timeColumns]
-            calcMatrix <- as.matrix(calcData)
-            calcMatrix[calcMatrix == 0] <- NA
-            calcData <- as.data.frame(calcMatrix)
-            row.names(calcData) <- unlist(upload()[idColumn])
-            
-            return(calcData)
-        } else {
-            return()
+    observe({
+        if (!is.null(dataValues$calcDF)) {
+            df <- dataValues$calcDF
+            ID <- dataValues$rawDF$ID
+            Name <- dataValues$rawDF$Name
+            shortDF <- df[,(ncol(df) - 2):ncol(df)]
+            top10 <- data.frame(ID, Name, shortDF, check.names = FALSE, stringsAsFactors = FALSE)
+            print(str(top10))
+            analysisValues$top10Table <- top10[order(top10[,-ncol(top10)]),]
+            print(str(top10))
         }
     })
-    
-    
-    
-    computeGrowthTable <- reactive({
-        if (!is.null(calcData())) {
-            df <- calcData()
-            #growthTable <- compute_growthtable(df)
-            growthTable <- compute_yearly_growth_table(df)
-            return(growthTable)
-        } else {
-            return()
-        }
-    })
-    
-    exportTop10Table <- reactive({
-      if (!is.null(calcData())) {
-        df <- calcData()
-        CityNames <- rownames(df)
-        lastDate <- df[,ncol(df)]
-        beforelast <- df[,ncol(df)-1]
-        beforebeforelast <- df[,ncol(df)-2]
-        Top10Table = data.frame(CityNames, beforebeforelast, beforelast, lastDate)
-        Top10Table <-   Top10Table[rev(order(Top10Table[,ncol(Top10Table)])),]
-        colnames(Top10Table) <- c("Names", tail(names(df),3))
-        return(Top10Table)
-      } else {
-        return()
-      }
-      
-        })
     
     exportZipfTable <- reactive({
-      if (!is.null(exportTop10Table())) {
-        df <- exportTop10Table()
+      if (!is.null(analysisValues$top10Table)) {
+        df <- analysisValues$top10Table
     dfZpif <- df
     
     datecol <- censusDate$datecol
@@ -123,8 +118,8 @@ shinyServer(function(input, output, session) {
 
 exportTransitionMatrix <- reactive ({
   
-  if (!is.null(exportTop10Table())) {
-    df <- exportTop10Table()
+  if (!is.null(analysisValues$top10Table)) {
+    df <- analysisValues$top10Table
       
     if (input$datefinal == "Last Census") final <- 4
     if (input$datefinal == "Last Census - 1") final <- 3
@@ -153,8 +148,8 @@ exportTransitionMatrix <- reactive ({
 
 
 exportLogNormalTable <- reactive({
-  if (!is.null(exportTop10Table())) {
-    df <- exportTop10Table()
+  if (!is.null(analysisValues$top10Table)) {
+    df <- analysisValues$top10Table
     dfLG <- df
     
     datecol <- censusDate$datecol
@@ -172,10 +167,9 @@ exportLogNormalTable <- reactive({
 exportZipfResTable <- reactive({
   if (!is.null(exportZipfTable())) {
 zipf <- exportZipfTable()  
-if (input$thousands == TRUE) zipfCut10 <- subset(zipf, size >= 10)
-if (input$thousands == FALSE) zipfCut10 <- subset(zipf, size >= 10000)
-if (input$thousands == TRUE) zipfCut100 <- subset(zipf, size >= 100)      
-if (input$thousands == FALSE) zipfCut100 <- subset(zipf, size >= 100000)      
+zipfCut10 <- subset(zipf, size >= 10000)
+zipfCut100 <- subset(zipf, size >= 100000)      
+
 model10 <- lm(log(size) ~ log(ranks), data=zipfCut10, na.action=na.omit)
 ConfInt_model10 <- confint(model10)
 model100 <- lm(log(size) ~ log(ranks), data=zipfCut100, na.action=na.omit)
@@ -195,8 +189,8 @@ return(res)
 
 
     simulationsData <- reactive({
-        if (!is.null(calcData()) && input$runSim > 0) {
-            df <- calcData()
+        if (!is.null(dataValues$calcDF) && input$runSim > 0) {
+            df <- dataValues$calcDF
             nbReps <- isolate(input$nbReplications)
             simData <- run_simulation(df=df, reps=nbReps)
             return(simData)
@@ -207,7 +201,7 @@ return(res)
     
     simResults <- reactive({
         if (!is.null(simulationsData())){
-            simResults <- simulationsData()[,ncol(calcData()),]
+            simResults <- simulationsData()[,ncol(dataValues$calcDF),]
             return(simResults)
         } else {
             return()
@@ -234,7 +228,7 @@ return(res)
     
     meanRanks <- reactive({
         if (!is.null(simMeans())){
-            meanRanks <- create_rank_tables(obsdata=calcData(), simMean=simMeans())
+            meanRanks <- create_rank_tables(obsdata=dataValues$calcDF, simMean=simMeans())
             return(meanRanks)
         } else {
             return()
@@ -244,7 +238,7 @@ return(res)
     simRanks <- reactive({
         if (!is.null(meanRanks())) {
             simRank <- as.data.frame(meanRanks()[1])
-            colnames(simRank) <- colnames(calcData())
+            colnames(simRank) <- colnames(dataValues$calcDF)
             return(simRank)
         } else {
             return()
@@ -254,7 +248,7 @@ return(res)
     obsRanks <- reactive({
         if (!is.null(meanRanks())) {
             obsRank <- as.data.frame(meanRanks()[2])
-            colnames(obsRank) <- colnames(calcData())
+            colnames(obsRank) <- colnames(dataValues$calcDF)
             return(obsRank)
         } else {
             return()
@@ -263,9 +257,9 @@ return(res)
     
     
     output$data <- renderDataTable({
-        if (!is.null(calcData())) {
-            df <- calcData()
-            df <- cbind(upload()[input$idColumn], df)
+        if (!is.null(dataValues$calcDF)) {
+            df <- dataValues$calcDF
+            df <- cbind(dataValues$rawDF$ID, df)
             colnames(df)[1] <- "Name"
             return(df)
         } else {
@@ -275,16 +269,16 @@ return(res)
     
     
     output$growthPlot <- renderPlot({
-        if (!is.null(calcData())){
-            growthTable <- computeGrowthTable()
+        if (!is.null(dataValues$calcDF)){
+            growthTable <- dataValues$growthTable
             meanGrowth <- unlist(growthTable[1,])
             sdGrowth <- unlist(growthTable[2,])
             minY <- min(meanGrowth - sdGrowth) 
             maxY <- max(meanGrowth + sdGrowth)
-            xLabels <- colnames(calcData())[-1]
+            xLabels <- colnames(dataValues$calcDF)[-1]
             polyX <- c(xLabels, rev(xLabels))
             polyY <- c((meanGrowth + sdGrowth), rev(meanGrowth - sdGrowth))
-            plot(y=unlist(growthTable[1,]), x=colnames(calcData())[-1],
+            plot(y=unlist(growthTable[1,]), x=colnames(dataValues$calcDF)[-1],
                  ylim=c(minY, maxY), type="b", pch=4,
                  xlab="Year",
                  ylab="Growth (%)")
@@ -295,8 +289,8 @@ return(res)
     })
     
     exportGrowthTable <- reactive({
-        if (!is.null(calcData())){
-            growthTable <- computeGrowthTable()
+        if (!is.null(dataValues$calcDF)){
+            growthTable <- dataValues$growthTable
             periodNames <- colnames(growthTable)
             indicatorNames <- row.names(growthTable)
             tGrowthTable <- cbind.data.frame(periodNames,t(growthTable))
@@ -324,7 +318,7 @@ return(res)
     output$simresultDL <- downloadHandler(
         filename = function() {paste(values$dataSource, "_simresults", ".csv", sep="")},
         content = function(file){
-            exportDF <- simulationsData()[,ncol(calcData()),]
+            exportDF <- simulationsData()[,ncol(dataValues$calcDF),]
             exportDF <- data.frame(ID=row.names(exportDF), exportDF)
             write.table(x=exportDF, file=file, sep=",", row.names=FALSE, col.names=TRUE, quote=TRUE)
         }
@@ -333,9 +327,9 @@ return(res)
     output$gibratRankSize <- renderPlot({
         if (is.null(simMeans())){ return()}
         
-        lastTime <- ncol(calcData())
+        lastTime <- ncol(dataValues$calcDF)
         
-        cData <- na.omit(calcData()[,lastTime])
+        cData <- na.omit(dataValues$calcDF[,lastTime])
         sData <- na.omit(simulationsData()[,lastTime,])
         mData <- na.omit(simMeans()[,lastTime])
         
@@ -357,15 +351,14 @@ return(res)
     })
     
     output$top10 <- renderDataTable({
-      exportTop10Table()
-    }, , options = list(iDisplayLength = 10))
+      analysisValues$top10Table
+    }, options = list(pageLength = 10))
     
     
     output$sizeClasses <- renderDataTable({
-      df <- exportTop10Table()
+      df <- analysisValues$top10Table
       datecol <- censusDate$datecol
       valBreaks <- c(0, 10000, 50000, 100000, 500000, 1000000, 10000000, 1000000000)
-      if ( input$thousands == TRUE) valBreaks = valBreaks / 1000
       df$Pop <- df[,datecol]
       df$N <- 1
       df$SizeClasses <- cut(df[,datecol],breaks = valBreaks, include.lowest = TRUE, right = FALSE)
@@ -382,7 +375,6 @@ return(res)
       zipf <- exportZipfTable()
     
     valBreaks=c(10000, 100000, 1000000, 10000000)
-    if ( input$thousands == TRUE) valBreaks = valBreaks / 1000
     
     p <-ggplot(zipf, aes(x=ranks, y=size)) 
     p + scale_y_log10(breaks=valBreaks) +
@@ -434,7 +426,7 @@ output$transitionMatrix <- renderTable({
 })  
   
     output$correlations <- renderTable({
-        obs <- calcData()
+        obs <- dataValues$calcDF
         reducedSim <- simMeans()[,colnames(obs)]
         myCors <- as.vector(unlist(lapply(X=colnames(obs), FUN=function(x){
             cor(sort(obs[,x]), y=sort(reducedSim[,x]))
@@ -470,20 +462,9 @@ output$transitionMatrix <- renderTable({
 
 
     
-    updateInputs <- function(session, columns, realColumns){
-        updateSelectInput(session=session, inputId="idColumn",
-                          choices=columns, selected="")
-        
+    updateInputs <- function(session, columns, realColumns){        
         updateSelectInput(session=session, inputId="timeColumnSelected",
-                          choices=realColumns, selected="")
-    }
-    
-    updateTestDataInputs <- function(session, columns, realColumns){
-        updateSelectInput(session=session, inputId="idColumn",
-                          choices=columns, selected=columns[2])
-        
-        updateSelectInput(session=session, inputId="timeColumnSelected",
-                          choices=realColumns, selected=columns[-c(1,2)])
+                          choices=realColumns, selected=realColumns)
     }
     
     
