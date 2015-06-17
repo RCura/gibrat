@@ -2,6 +2,7 @@ library(shiny)
 library(ggplot2)
 library(MASS)
 library(poweRlaw)
+library(DT)
 # TODO : Add a computation of correlation for each census date observed/ mean of simulated
 
 # Define server logic for random distribution application
@@ -85,9 +86,7 @@ shinyServer(function(input, output, session) {
             Name <- dataValues$rawDF$Name
             shortDF <- df[,(ncol(df) - 2):ncol(df)]
             top10 <- data.frame(ID, Name, shortDF, check.names = FALSE, stringsAsFactors = FALSE)
-            print(str(top10))
             analysisValues$top10Table <- top10[order(top10[,-ncol(top10)]),]
-            print(str(top10))
         }
     })
     
@@ -259,13 +258,13 @@ return(res)
     output$data <- renderDataTable({
         if (!is.null(dataValues$calcDF)) {
             df <- dataValues$calcDF
-            df <- cbind(dataValues$rawDF$ID, df)
-            colnames(df)[1] <- "Name"
+            df <- cbind(dataValues$rawDF$ID, dataValues$rawDF$Name, df)
+            colnames(df)[1:2] <- c("ID", "Name")
             return(df)
         } else {
             return()
         }
-    })
+    }, rownames  = FALSE, filter = "bottom")
     
     
     output$growthPlot <- renderPlot({
@@ -304,7 +303,7 @@ return(res)
     
     output$growthTable <- renderDataTable({
         exportGrowthTable()
-    }, , options = list(iDisplayLength = 50))
+    }, options = list(iDisplayLength = 50))
     
 
     
@@ -352,7 +351,7 @@ return(res)
     
     output$top10 <- renderDataTable({
       analysisValues$top10Table
-    }, options = list(pageLength = 10))
+    }, options = list(pageLength = 10, dom  = "t", order = list(5, 'desc')))
     
     
     output$sizeClasses <- renderDataTable({
@@ -361,7 +360,10 @@ return(res)
       valBreaks <- c(0, 10000, 50000, 100000, 500000, 1000000, 10000000, 1000000000)
       df$Pop <- df[,datecol]
       df$N <- 1
-      df$SizeClasses <- cut(df[,datecol],breaks = valBreaks, include.lowest = TRUE, right = FALSE)
+      df$SizeClasses <- cut(df[,datecol],breaks = valBreaks, include.lowest = TRUE, right = FALSE,
+                            labels = c("< 10k", "10k - 50k",
+                                       "50k  - 100k", "100k - 1M",
+                                       "1M - 10M",  "> 10M", "> 100M"))
       SizeClassTable <- aggregate(df[,c("N", "Pop")],
                         by = list(df$SizeClasses), FUN = sum, na.rm = T )
       colnames(SizeClassTable) <- c("SizeClass", "NumberOfCities", "TotalPopulation")
@@ -369,7 +371,7 @@ return(res)
       Total <- c("Total", sum(SizeClassTable$NumberOfCities), sum(SizeClassTable$TotalPopulation), 100)
       SizeClassTable <- rbind (SizeClassTable, Total)
       SizeClassTable
-    })
+    },options  =  list(dom = "t"))
     
     output$plotZipf <- renderPlot({
       zipf <- exportZipfTable()

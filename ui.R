@@ -12,15 +12,15 @@ shinyUI(pageWithSidebar(
     ),
     mainPanel(
     tabsetPanel(
-        tabPanel("Base data", dataTableOutput('data')),
-        tabPanel("Top 10", dataTableOutput('top10')),
+        tabPanel("Base data", DT::dataTableOutput('data')),
+        tabPanel("Top 10", DT::dataTableOutput('top10')),
         tabPanel("City Size Classes", 
                  selectInput("date", "Date", choices=c("Last Census",
                                                        "Last Census - 1",
                                                        "Last Census - 2"), 
                              multiple=FALSE, 
                              selected="Last Census"), 
-                  dataTableOutput('sizeClasses')),
+                  DT::dataTableOutput('sizeClasses')),
         tabPanel("Zipf", 
                  selectInput("date", "Date", choices=c("Last Census",
                                                        "Last Census - 1",
