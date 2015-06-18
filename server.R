@@ -128,13 +128,18 @@ exportTransitionMatrix <- reactive ({
     if (input$dateinitial == "Last Census - 1") initial <- 3
     if (input$dateinitial == "Last Census - 2") initial <- 2
     
-    valBreaks <- c(0, 10000, 50000, 100000, 500000, 1000000, 10000000, 1000000000)
-    if ( input$thousands == TRUE) valBreaks = valBreaks / 1000
+    valBreaks <- c(0, 10000, 50000, 100000, 500000, 1000000, 10000000)
     
     FinalPops <- df[,final]
     InitialPops <- df[,initial]
-    FinalDate <- cut(x=FinalPops,breaks=valBreaks, include.lowest = TRUE, right = FALSE) 
-    InitialDate <- cut(x=InitialPops,breaks=valBreaks, include.lowest = TRUE, right = FALSE) 
+    FinalDate <- cut(x=FinalPops,breaks=valBreaks, include.lowest = TRUE, right = FALSE,
+                     labels = c("< 10k", "10k - 50k",
+                               "50k  - 100k", "100k - 1M",
+                               "1M - 10M",  "> 10M")) 
+    InitialDate <- cut(x=InitialPops,breaks=valBreaks, include.lowest = TRUE, right = FALSE,
+                       labels = c("< 10k", "10k - 50k",
+                                 "50k  - 100k", "100k - 1M",
+                                 "1M - 10M",  "> 10M")) 
       
     transitionMatrix <- table(InitialDate,FinalDate)
     
@@ -357,13 +362,13 @@ return(res)
     output$sizeClasses <- renderDataTable({
       df <- analysisValues$top10Table
       datecol <- censusDate$datecol
-      valBreaks <- c(0, 10000, 50000, 100000, 500000, 1000000, 10000000, 1000000000)
+      valBreaks <- c(0, 10000, 50000, 100000, 500000, 1000000, 10000000)
       df$Pop <- df[,datecol]
       df$N <- 1
       df$SizeClasses <- cut(df[,datecol],breaks = valBreaks, include.lowest = TRUE, right = FALSE,
                             labels = c("< 10k", "10k - 50k",
                                        "50k  - 100k", "100k - 1M",
-                                       "1M - 10M",  "> 10M", "> 100M"))
+                                       "1M - 10M",  "> 10M"))
       SizeClassTable <- aggregate(df[,c("N", "Pop")],
                         by = list(df$SizeClasses), FUN = sum, na.rm = T )
       colnames(SizeClassTable) <- c("SizeClass", "NumberOfCities", "TotalPopulation")
