@@ -303,7 +303,7 @@ return(res)
     
     output$growthTable <- renderDataTable({
         exportGrowthTable()
-    }, options = list(iDisplayLength = 50))
+    }, options = list(length = 50, dom = "t"))
     
 
     

@@ -56,7 +56,7 @@ shinyUI(pageWithSidebar(
                  tableOutput('transitionMatrix')),
         tabPanel("Growth",
                  tags$h4("Observed"),
-                 dataTableOutput('growthTable'),
+                 DT::dataTableOutput('growthTable'),
                  tags$h4('Average yearly growth rate'),
                  plotOutput("growthPlot"),
                  downloadButton(outputId="dlButton", label="Download table")),
