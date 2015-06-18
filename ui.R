@@ -43,6 +43,7 @@ shinyUI(pageWithSidebar(
                 "cf. Gillespie C. S., 2015, Fitting heavy tailed distributions : 
                  the poweRlaw package, Journal of Statistical Software, Vol. 64, Issue 2."),
         tabPanel("Transition Matrices", 
+                 fluidRow(
                  column(6,selectInput("dateinitial", "Initial Date", choices=c("Last Census",
                                                                       "Last Census - 1",
                                                                       "Last Census - 2"), 
@@ -52,7 +53,7 @@ shinyUI(pageWithSidebar(
                                                                    "Last Census - 1",
                                                                    "Last Census - 2"), 
                              multiple=FALSE, 
-                             selected="Last Census")),
+                             selected="Last Census"))),
                  fluidRow(
                      tableOutput('transitionMatrix'))),
         tabPanel("Growth",
