@@ -7,11 +7,11 @@ library(DT)
 
 # Define server logic for random distribution application
 shinyServer(function(input, output, session) {
-    
+    #options(warn=0, error=browser, shiny.error=browser)
     load("data/countriesPop.RData")
     
     dataValues <- reactiveValues(rawDF = NULL,
-                             timeDF = NULL,
+                             filtredDF = NULL,
                              calcDF = NULL,
                              growthTable = NULL)
     
@@ -68,7 +68,7 @@ shinyServer(function(input, output, session) {
         timeColumns <- input$timeColumnSelected
         if (!is.null(timeColumns) && timeColumns %in% names(dataValues$rawDF)){
             calcData <- dataValues$rawDF[timeColumns]
-            row.names(calcData) <- unlist(dataValues$rawDF$ID)
+            row.names(calcData) <- dataValues$rawDF$ID
             dataValues$calcDF <- calcData
         }
     })
@@ -81,12 +81,9 @@ shinyServer(function(input, output, session) {
     
     observe({
         if (!is.null(dataValues$calcDF)) {
-            df <- dataValues$calcDF
-            ID <- dataValues$rawDF$ID
-            Name <- dataValues$rawDF$Name
-            shortDF <- df[,(ncol(df) - 2):ncol(df)]
-            top10 <- data.frame(ID, Name, shortDF, check.names = FALSE, stringsAsFactors = FALSE)
-            analysisValues$top10Table <- top10[order(top10[,-ncol(top10)]),]
+            df <- dataValues$rawDF
+            shortDF <- df[,c(1:2,(ncol(df) - 2):ncol(df))]
+            analysisValues$top10Table <- shortDF[order(shortDF[,-ncol(shortDF)]),]
         }
     })
     
@@ -261,15 +258,17 @@ return(res)
     
     
     output$data <- renderDataTable({
-        if (!is.null(dataValues$calcDF)) {
-            df <- dataValues$calcDF
-            df <- cbind(dataValues$rawDF$ID, dataValues$rawDF$Name, df)
-            colnames(df)[1:2] <- c("ID", "Name")
-            return(df)
-        } else {
-            return()
+        if (!is.null(dataValues$rawDF)) {
+            dataValues$rawDF
         }
-    }, rownames  = FALSE, filter = "bottom")
+    }, rownames  = FALSE,
+    filter = "bottom",
+    extensions = list(FixedColumns = list(leftColumns = 2)),
+    options = list(
+        scrollX = TRUE,
+        scrollCollapse = TRUE
+    ),
+    class = 'cell-border stripe')
     
     
     output$growthPlot <- renderPlot({
@@ -313,14 +312,14 @@ return(res)
 
     
     output$dlButton <- downloadHandler(
-        filename = function() { paste(values$dataSource, "_growth", '.csv', sep='') },
+        filename = function() { paste(input$dataset, "_growth", '.csv', sep='') },
         content = function(file) {
             write.table(x=exportGrowthTable(), file=file,sep=",", dec=".", row.names=FALSE, col.names=TRUE, quote=TRUE)
         }
     )
     
     output$simresultDL <- downloadHandler(
-        filename = function() {paste(values$dataSource, "_simresults", ".csv", sep="")},
+        filename = function() {paste(input$dataset, "_simresults", ".csv", sep="")},
         content = function(file){
             exportDF <- simulationsData()[,ncol(dataValues$calcDF),]
             exportDF <- data.frame(ID=row.names(exportDF), exportDF)
@@ -431,6 +430,11 @@ output$estimLognormal <- renderTable({
 output$transitionMatrix <- renderTable({
   exportTransitionMatrix()
 })  
+
+output$transitionMatrixRel <- renderTable({
+    trMatrix <-  exportTransitionMatrix()
+    relMatrix <-  trMatrix  / rowSums(trMatrix) * 100
+    })  
   
     output$correlations <- renderTable({
         obs <- dataValues$calcDF

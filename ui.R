@@ -55,7 +55,9 @@ shinyUI(pageWithSidebar(
                              multiple=FALSE, 
                              selected="Last Census"))),
                  fluidRow(
-                     tableOutput('transitionMatrix'))),
+                     tableOutput('transitionMatrix')),
+        fluidRow(
+            tableOutput('transitionMatrixRel'))),
         tabPanel("Growth",
                  tags$h4("Observed"),
                  DT::dataTableOutput('growthTable'),
