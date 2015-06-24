@@ -13,7 +13,8 @@ shinyServer(function(input, output, session) {
     dataValues <- reactiveValues(rawDF = NULL,
                              filtredDF = NULL,
                              calcDF = NULL,
-                             growthTable = NULL)
+                             growthTable = NULL,
+                             lastCensusesTable  = NULL)
     
     computedValues <- reactiveValues(simData = NULL,
                                      simResults = NULL,
@@ -23,8 +24,7 @@ shinyServer(function(input, output, session) {
                                      simRanks = NULL,
                                      obsRanks = NULL)
     
-    analysisValues <- reactiveValues(top10Table = NULL,
-                                     zipfTable = NULL,
+    analysisValues <- reactiveValues(zipfTable = NULL,
                                      transitionMatrix = NULL,
                                      logNormalTable = NULL,
                                      zipfResTable = NULL
@@ -83,7 +83,7 @@ shinyServer(function(input, output, session) {
         if (!is.null(dataValues$calcDF)) {
             df <- dataValues$rawDF
             shortDF <- df[,c(1:2,(ncol(df) - 2):ncol(df))]
-            analysisValues$top10Table <- shortDF[order(shortDF[,-ncol(shortDF)]),]
+            dataValues$lastCensusesTable <- shortDF[order(shortDF[,-ncol(shortDF)]),]
         }
     })
     
@@ -114,8 +114,8 @@ shinyServer(function(input, output, session) {
 
 exportTransitionMatrix <- reactive ({
   
-  if (!is.null(analysisValues$top10Table)) {
-    df <- analysisValues$top10Table
+  if (!is.null(dataValues$lastCensusesTable)) {
+    df <- dataValues$lastCensusesTable
       
     if (input$datefinal == "Last Census") final <- 4
     if (input$datefinal == "Last Census - 1") final <- 3
@@ -149,8 +149,8 @@ exportTransitionMatrix <- reactive ({
 
 
 exportLogNormalTable <- reactive({
-  if (!is.null(analysisValues$top10Table)) {
-    df <- analysisValues$top10Table
+  if (!is.null(dataValues$lastCensusesTable)) {
+    df <- dataValues$lastCensusesTable
     dfLG <- df
     
     datecol <- censusDate$datecol
@@ -166,8 +166,8 @@ exportLogNormalTable <- reactive({
 })
     
 exportZipfResTable <- reactive({
-  if (!is.null(exportZipfTable())) {
-zipf <- exportZipfTable()  
+  if (!is.null(analysisValues$zipfTable)) {
+zipf <- analysisValues$zipfTable  
 zipfCut10 <- subset(zipf, size >= 10000)
 zipfCut100 <- subset(zipf, size >= 100000)      
 
@@ -354,12 +354,12 @@ return(res)
     })
     
     output$top10 <- renderDataTable({
-      analysisValues$top10Table
+      dataValues$lastCensusesTable
     }, options = list(pageLength = 10, dom  = "t", order = list(5, 'desc')))
     
     
     output$sizeClasses <- renderDataTable({
-      df <- analysisValues$top10Table
+      df <- dataValues$lastCensusesTable
       datecol <- censusDate$datecol
       valBreaks <- c(0, 10000, 50000, 100000, 500000, 1000000, 10000000)
       df$Pop <- df[,datecol]
@@ -378,7 +378,7 @@ return(res)
     },options  =  list(dom = "t"))
     
     output$plotZipf <- renderPlot({
-      zipf <- exportZipfTable()
+      zipf <- analysisValues$zipfTable
     
     valBreaks=c(10000, 100000, 1000000, 10000000)
     
