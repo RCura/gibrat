@@ -87,30 +87,18 @@ shinyServer(function(input, output, session) {
         }
     })
     
-    exportZipfTable <- reactive({
-      if (!is.null(analysisValues$top10Table)) {
-        df <- analysisValues$top10Table
-    dfZpif <- df
-    
-    datecol <- censusDate$datecol
-
-    dfZpif$datepop <- dfZpif[,datecol]
-    dfZpif <- subset(dfZpif, datepop > 0)
-    
-    sizes <- dfZpif[order(-dfZpif$datepop) , ]
-    sizes <- sizes[,5]
-    ncities <- nrow(dfZpif)
-    ranks <- 1:ncities
-    zipf = data.frame(ranks, sizes)
-    colnames(zipf) <- c("ranks", "size")
-    dates <- rep(names(df)[[datecol]], ncities)
-    zipf = data.frame(zipf, dates)
-    return(zipf)
-} else {
-  return()
-}
-
-})
+    observe({
+        if (!is.null(dataValues$lastCensusesTable)) {
+            dfZipf <- dataValues$lastCensusesTable
+            dfZipf <- dfZipf[dfZipf[,censusDate$datecol] > 0, censusDate$datecol]
+            dfZipf <- dfZipf[order(-dfZipf[,1]), ]
+            ranks <- 1:nrow(dfZipf)
+            zipf <- data.frame(ranks, dfZipf, stringsAsFactors =  FALSE, check.names = FALSE)
+            colnames(zipf) <- c("ranks", "size")
+            zipf$dates <- names(dataValues$lastCensusTable)[censusDate$datecol]
+            analysisValues$zipfTable <- zipf
+        }
+    })
 
 exportTransitionMatrix <- reactive ({
   
