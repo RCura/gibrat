@@ -11,10 +11,10 @@ shinyServer(function(input, output, session) {
     load("data/countriesPop.RData")
     
     dataValues <- reactiveValues(rawDF = NULL,
-                             filtredDF = NULL,
-                             calcDF = NULL,
-                             growthTable = NULL,
-                             lastCensusesTable  = NULL)
+                                 filtredDF = NULL,
+                                 calcDF = NULL,
+                                 growthTable = NULL,
+                                 lastCensusesTable  = NULL)
     
     computedValues <- reactiveValues(simData = NULL,
                                      simResults = NULL,
@@ -28,11 +28,12 @@ shinyServer(function(input, output, session) {
                                      transitionMatrix = NULL,
                                      logNormalTable = NULL,
                                      zipfResTable = NULL
-                                     )
-
+    )
+    
     
     observe({
         countryName <- input$dataset
+        resetValues()
         if (countryName ==  "Brazil") {
             dataValues$rawDF <- Brazil
         } else if (countryName ==  "Russia") {
@@ -48,13 +49,13 @@ shinyServer(function(input, output, session) {
         } else  {
             dataValues$rawDF <- France 
         }
-
+        
         timeColumns <- as.numeric(na.omit(as.numeric(unlist(colnames(dataValues$rawDF)))))
         allColumns <- c("None", unlist(colnames(dataValues$rawDF)))
         updateInputs(session, allColumns, timeColumns)
         
     })
-        
+    
     observe({
         timeColumns <- input$timeColumnSelected
         if (!is.null(timeColumns) && timeColumns %in% names(dataValues$rawDF)){
@@ -79,7 +80,7 @@ shinyServer(function(input, output, session) {
     })
     
     observe({
-        if (!is.null(dataValues$rawDF) & input$dateZipf !=  "" ) {
+        if (!is.null(dataValues$rawDF) && input$dateZipf !=  "" && input$dateZipf %in% names(dataValues$rawDF)) {
             dfZipf <- dataValues$rawDF
             dfZipf <- as.data.frame(dfZipf[dfZipf[,input$dateZipf] > 0, input$dateZipf], check.names =  FALSE)
             dfZipf <- dfZipf[order(-dfZipf[,1]), ]
@@ -90,9 +91,13 @@ shinyServer(function(input, output, session) {
             analysisValues$zipfTable <- zipf
         }
     })
-
+    
     observe({
-        if (!is.null(dataValues$rawDF) &  input$dateFinal  != "" & input$dateInitial  != ""){
+        if (
+            !is.null(dataValues$rawDF) &&  input$dateFinal  != ""&& input$dateInitial  != "" &&
+            input$dateFinal %in% names(dataValues$rawDF)  && input$dateInitial %in% names(dataValues$rawDF)
+            ){
+            
             df <- dataValues$rawDF
             valBreaks <- c(0, 10E3, 50E3, 100E3, 1E6, 10E6, 10E9)
             labelsBreaks <-  c("< 10k", "10k - 50k","50k - 100k", "100k - 1M","1M - 10M",  "> 10M")
@@ -106,108 +111,59 @@ shinyServer(function(input, output, session) {
             analysisValues$transitionMatrix <-  transitionMatrix
         }
     })
-
-observe({
-    if (!is.null(dataValues$rawDF) & input$dateLogNormal  != ""){
-        dfLG <-  dataValues$rawDF
-        dfLG$datepop  <-  dataValues$rawDF[,input$dateLogNormal]
-        dfLG <- subset(dfLG, datepop > 0)
-        analysisValues$logNormalTable <- dfLG
+    
+    observe({
+        if (!is.null(dataValues$rawDF) && input$dateLogNormal  != "" && input$dateLogNormal %in% names(dataValues$rawDF)){
+            dfLG <-  dataValues$rawDF
+            dfLG$datepop  <-  dataValues$rawDF[,input$dateLogNormal]
+            dfLG <- subset(dfLG, datepop > 0)
+            analysisValues$logNormalTable <- dfLG
+            
+        }
+    })
+    
+    observe({
+        if (!is.null(analysisValues$zipfTable)) {
+            zipf <- analysisValues$zipfTable  
+            zipfCut10 <- subset(zipf, size >= 10000)
+            zipfCut100 <- subset(zipf, size >= 100000)
+            
+            model10 <- lm(log(size) ~ log(ranks), data=zipfCut10, na.action=na.omit)
+            ConfInt_model10 <- confint(model10)
+            res10 = data.frame(model10$coefficients[[2]], ConfInt_model10[2,1], ConfInt_model10[2,2], summary(model10)$r.squared)
+            colnames(res10) <- c("Estimated Zipf Exponent", "Lower bound", "Upper bound", "R squared")
+            
+            model100 <- lm(log(size) ~ log(ranks), data=zipfCut100, na.action=na.omit)
+            ConfInt_model100 <- confint(model100)
+            res100 = data.frame(model100$coefficients[[2]], ConfInt_model100[2,1], ConfInt_model100[2,2], summary(model100)$r.squared)
+            colnames(res100) <- c("Estimated Zipf Exponent", "Lower bound", "Upper bound", "R squared")
+            
+            res <- rbind(res10, res100)
+            Estimation  <- c("Population > 10000 hab.", "Population > 100000 hab.")
+            res <- cbind(Estimation, res)
+            analysisValues$zipfResTable <- res
+        }
         
-    }
-})
+    })
     
-exportZipfResTable <- reactive({
-  if (!is.null(analysisValues$zipfTable)) {
-zipf <- analysisValues$zipfTable  
-zipfCut10 <- subset(zipf, size >= 10000)
-zipfCut100 <- subset(zipf, size >= 100000)      
+    observeEvent(input$rumSim,{
+        df <- dataValues$calcDF
+        nbReps <- input$nbReplications
+        print("sim running")
+        computedValues$simData <- run_simulation(df=df, reps=nbReps)
+        print("sim  finished")
+        computedValues$simResults <-  computedValues$simData[,ncol(dataValues$calcDF),]
+        computedValues$simMeans <- apply(X=computedValues$simData[,,], 1:2, function(x){mean(x, na.rm=TRUE)})
+        computedValues$simSDs <- apply(X=computedValues$simData[,,], 1:2, function(x){return(sd(x, na.rm=TRUE))})
+        computedValues$meanRanks <- meanRanks <- create_rank_tables(obsdata=dataValues$calcDF, simMean=computedValues$simMeans)
+        
+        computedValues$simRanks <- as.data.frame(computedValues$meanRanks[1])
+        colnames(computedValues$simRanks) <- colnames(dataValues$calcDF)
+        
+        computedValues$obsRanks <- as.data.frame(computedValues$meanRanks[2])
+        colnames(computedValues$obsRanks) <- colnames(dataValues$calcDF)
+    })
 
-model10 <- lm(log(size) ~ log(ranks), data=zipfCut10, na.action=na.omit)
-ConfInt_model10 <- confint(model10)
-model100 <- lm(log(size) ~ log(ranks), data=zipfCut100, na.action=na.omit)
-ConfInt_model100 <- confint(model100)
-res10 = data.frame(model10$coefficients[[2]], ConfInt_model10[2,1], ConfInt_model10[2,2], summary(model10)$r.squared)
-colnames(res10) <- c("Estimated Zipf Exponent", "Lower bound", "Upper bound", "R squared")
-res100 = data.frame(model100$coefficients[[2]], ConfInt_model100[2,1], ConfInt_model100[2,2], summary(model100)$r.squared)
-colnames(res100) <- c("Estimated Zipf Exponent", "Lower bound", "Upper bound", "R squared")
-res = rbind(res10, res100)
-Estimation<- c("Population > 10000 hab.", "Population > 100000 hab.")
-res <- cbind(Estimation, res)
-return(res)
-} else {
-  return()
-}
-})
-
-
-    simulationsData <- reactive({
-        if (!is.null(dataValues$calcDF) && input$runSim > 0) {
-            df <- dataValues$calcDF
-            nbReps <- isolate(input$nbReplications)
-            simData <- run_simulation(df=df, reps=nbReps)
-            return(simData)
-        } else {
-            return()
-        }
-    })
-    
-    simResults <- reactive({
-        if (!is.null(simulationsData())){
-            simResults <- simulationsData()[,ncol(dataValues$calcDF),]
-            return(simResults)
-        } else {
-            return()
-        }
-    })
-    
-    simMeans <- reactive({
-        if (!is.null(simulationsData())){
-            simMeans <- apply(X=simulationsData()[,,], 1:2, function(x){mean(x, na.rm=TRUE)})
-            return(simMeans)
-        } else {
-            return()
-        }
-    })
-    
-    simSDs <- reactive({
-        if (!is.null(simulationsData())){
-            simSDs <- apply(X=simulationsData()[,,], 1:2, function(x){return(sd(x, na.rm=TRUE))})
-            return(simSDs)
-        } else {
-            return()
-        }
-    })
-    
-    meanRanks <- reactive({
-        if (!is.null(simMeans())){
-            meanRanks <- create_rank_tables(obsdata=dataValues$calcDF, simMean=simMeans())
-            return(meanRanks)
-        } else {
-            return()
-        }
-    })
-    
-    simRanks <- reactive({
-        if (!is.null(meanRanks())) {
-            simRank <- as.data.frame(meanRanks()[1])
-            colnames(simRank) <- colnames(dataValues$calcDF)
-            return(simRank)
-        } else {
-            return()
-        }
-    })
-    
-    obsRanks <- reactive({
-        if (!is.null(meanRanks())) {
-            obsRank <- as.data.frame(meanRanks()[2])
-            colnames(obsRank) <- colnames(dataValues$calcDF)
-            return(obsRank)
-        } else {
-            return()
-        }
-    })
-    
     
     output$data <- renderDataTable({
         if (!is.null(dataValues$rawDF)) {
@@ -261,7 +217,7 @@ return(res)
         exportGrowthTable()
     }, options = list(length = 50, dom = "t"))
     
-
+    
     
     output$dlButton <- downloadHandler(
         filename = function() { paste(input$dataset, "_growth", '.csv', sep='') },
@@ -273,20 +229,20 @@ return(res)
     output$simresultDL <- downloadHandler(
         filename = function() {paste(input$dataset, "_simresults", ".csv", sep="")},
         content = function(file){
-            exportDF <- simulationsData()[,ncol(dataValues$calcDF),]
+            exportDF <- computedValues$simData[,ncol(dataValues$calcDF),]
             exportDF <- data.frame(ID=row.names(exportDF), exportDF)
             write.table(x=exportDF, file=file, sep=",", row.names=FALSE, col.names=TRUE, quote=TRUE)
         }
-        )
+    )
     
     output$gibratRankSize <- renderPlot({
-        if (is.null(simMeans())){ return()}
+        if (is.null(computedValues$simMeans)){ return()}
         
         lastTime <- ncol(dataValues$calcDF)
         
         cData <- na.omit(dataValues$calcDF[,lastTime])
-        sData <- na.omit(simulationsData()[,lastTime,])
-        mData <- na.omit(simMeans()[,lastTime])
+        sData <- na.omit(computedValues$simData[,lastTime,])
+        mData <- na.omit(computedValues$simMeans[,lastTime])
         
         maxpop <- max(max(cData),max(sData))
         minpop <- min(min(cData),min(sData))
@@ -306,7 +262,7 @@ return(res)
     })
     
     output$top10 <- renderDataTable({
-      dataValues$lastCensusesTable
+        dataValues$lastCensusesTable
     }, options = list(pageLength = 10, dom  = "t", order = list(5, 'desc')))
     
     
@@ -331,67 +287,67 @@ return(res)
     
     
     output$plotZipf <- renderPlot({
-      zipf <- analysisValues$zipfTable
-    
-    valBreaks=c(10E3, 100E3, 1E6, 10E6)
-    
-    p <-ggplot(zipf, aes(x=ranks, y=size)) 
-    p + scale_y_log10(breaks=valBreaks) +
-      scale_x_log10(breaks=c(1, 10, 100, 1000)) + 
-      xlab("Rank") + ylab("Size (Population)") +
-      geom_point(colour="aquamarine3") + geom_line(colour="aquamarine3", size = 2) +
-      theme(axis.text=element_text(size=12) ,
-           # axis.title=element_text(size=14),
-            axis.text.x = element_text(angle = 45, hjust = 1)#,
-            #ggtitle(paste("Zipf Plot in ", input$date, sep=""))
+        zipf <- analysisValues$zipfTable
+        
+        valBreaks=c(10E3, 100E3, 1E6, 10E6)
+        
+        p <-ggplot(zipf, aes(x=ranks, y=size)) 
+        p + scale_y_log10(breaks=valBreaks) +
+            scale_x_log10(breaks=c(1, 10, 100, 1000)) + 
+            xlab("Rank") + ylab("Size (Population)") +
+            geom_point(colour="aquamarine3") + geom_line(colour="aquamarine3", size = 2) +
+            theme(axis.text=element_text(size=12) ,
+                  # axis.title=element_text(size=14),
+                  axis.text.x = element_text(angle = 45, hjust = 1)#,
+                  #ggtitle(paste("Zipf Plot in ", input$date, sep=""))
             ) 
     })
     
-
-
+    
+    
     output$estimZipf <- renderTable({
-      exportZipfResTable()  
+        analysisValues$zipfResTable  
     },digits = 3)
     
-
-
-output$plotLognormal <- renderPlot({
-  pops <- analysisValues$logNormalTable
-  LogPopulations <- log(pops$datepop)
-   hist(LogPopulations, col="aquamarine3", freq=F)
-  fit<-fitdistr(LogPopulations,"log-normal")$estimate
-  lines(dlnorm(0:max(LogPopulations),fit[1],fit[2]), lwd=3)  
-  })
-
-output$estimLognormal <- renderTable({
-  pops <- analysisValues$logNormalTable
-  Populations <- as.data.frame(sort(pops$datepop,decreasing = TRUE))
-  colnames(Populations) <- c("Pop")
- # Populations
-  ln_m <- dislnorm$new(Populations$Pop)
-  est_ln <- estimate_xmin(ln_m)
-  ln_m$setXmin(est_ln)
- 
- ln_estim = data.frame(matrix(ncol = 3, nrow = 1))
-  ln_estim[1,1] <- ln_m$pars[[1]]
- ln_estim[1,2] <- ln_m$pars[[2]]
- ln_estim[1,3] <- ln_m$xmin
- colnames(ln_estim) <- c("Mean", "Standard Deviation", "X min")
- ln_estim
-})
-
-output$transitionMatrix <- renderTable({
-  analysisValues$transitionMatrix
-})  
-
-output$transitionMatrixRel <- renderTable({
-    trMatrix <-  analysisValues$transitionMatrix
-    relMatrix <-  trMatrix  / rowSums(trMatrix) * 100
+    
+    
+    output$plotLognormal <- renderPlot({
+        pops <- analysisValues$logNormalTable
+        LogPopulations <- log(pops$datepop)
+        hist(LogPopulations, col="aquamarine3", freq=F)
+        fit<-fitdistr(LogPopulations,"log-normal")$estimate
+        lines(dlnorm(0:max(LogPopulations),fit[1],fit[2]), lwd=3)  
+    })
+    
+    output$estimLognormal <- renderTable({
+        pops <- analysisValues$logNormalTable
+        Populations <- as.data.frame(sort(pops$datepop,decreasing = TRUE))
+        colnames(Populations) <- c("Pop")
+        # Populations
+        ln_m <- dislnorm$new(Populations$Pop)
+        est_ln <- estimate_xmin(ln_m)
+        ln_m$setXmin(est_ln)
+        
+        ln_estim = data.frame(matrix(ncol = 3, nrow = 1))
+        ln_estim[1,1] <- ln_m$pars[[1]]
+        ln_estim[1,2] <- ln_m$pars[[2]]
+        ln_estim[1,3] <- ln_m$xmin
+        colnames(ln_estim) <- c("Mean", "Standard Deviation", "X min")
+        ln_estim
+    })
+    
+    output$transitionMatrix <- renderTable({
+        analysisValues$transitionMatrix
     })  
-  
+    
+    output$transitionMatrixRel <- renderTable({
+        trMatrix <-  analysisValues$transitionMatrix
+        relMatrix <-  trMatrix  / rowSums(trMatrix) * 100
+    })  
+    
     output$correlations <- renderTable({
         obs <- dataValues$calcDF
-        reducedSim <- simMeans()[,colnames(obs)]
+        reducedSim <- computedValues$simMeans[,colnames(obs)]
         myCors <- as.vector(unlist(lapply(X=colnames(obs), FUN=function(x){
             cor(sort(obs[,x]), y=sort(reducedSim[,x]))
         })))
@@ -423,8 +379,8 @@ output$transitionMatrixRel <- renderTable({
         # Idem en log
         # A chaque date, écart-type (ou C.V ?) simulé/observé.
     })
-
-
+    
+    
     
     updateInputs <- function(session, columns, realColumns){        
         updateSelectInput(session=session, inputId="timeColumnSelected",
@@ -444,6 +400,35 @@ output$transitionMatrixRel <- renderTable({
         updateSelectInput(session=session, inputId="dateFinal",
                           choices=realColumns,
                           selected=realColumns[length(realColumns)])
+    }
+    
+    resetValues <- function(){
+        dataValues <- reactiveValues(rawDF = NULL,
+                                     filtredDF = NULL,
+                                     calcDF = NULL,
+                                     growthTable = NULL,
+                                     lastCensusesTable  = NULL)
+        
+        computedValues <- reactiveValues(simData = NULL,
+                                         simResults = NULL,
+                                         simMeans = NULL,
+                                         simSDs = NULL,
+                                         meanRanks = NULL,
+                                         simRanks = NULL,
+                                         obsRanks = NULL)
+        
+        analysisValues <- reactiveValues(zipfTable = NULL,
+                                         transitionMatrix = NULL,
+                                         logNormalTable = NULL,
+                                         zipfResTable = NULL
+        )
+        
+        updateSelectInput(session=session, inputId="timeColumnSelected", choices=NA, selected="")
+        updateSelectInput(session=session, inputId="dateClasses", choices=NA, selected="")
+        updateSelectInput(session=session, inputId="dateZipf", choices=NA,  selected="")
+        updateSelectInput(session=session, inputId="dateLogNormal", choices=NA, selected="")
+        updateSelectInput(session=session, inputId="dateInitial", choices=NA, selected="")
+        updateSelectInput(session=session, inputId="dateFinal", choices = NA, selected="")
     }
     
     
