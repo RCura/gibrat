@@ -34,9 +34,9 @@ shinyServer(function(input, output, session) {
     
     censusDate <- reactiveValues(datecol= NULL)
     observe({
-      if (input$date == "Last Census") censusDate$datecol <- 4
-      if (input$date == "Last Census - 1") censusDate$datecol <- 3
-      if (input$date == "Last Census - 2") censusDate$datecol <- 2
+      #if (input$date == "Last Census") censusDate$datecol <- 4
+      #if (input$date == "Last Census - 1") censusDate$datecol <- 3
+      #if (input$date == "Last Census - 2") censusDate$datecol <- 2
       
     })
     
@@ -87,18 +87,18 @@ shinyServer(function(input, output, session) {
         }
     })
     
-#     observe({
-#         if (!is.null(dataValues$rawDF)) {
-#             dfZipf <- dataValues$rawDF
-#             dfZipf <- dfZipf[dfZipf[,input$dateZipf] > 0, input$dateZipf]
-#             dfZipf <- dfZipf[order(-dfZipf[,1]), ]
-#             ranks <- 1:nrow(dfZipf)
-#             zipf <- data.frame(ranks, dfZipf, stringsAsFactors =  FALSE, check.names = FALSE)
-#             colnames(zipf) <- c("ranks", "size")
-#             zipf$dates <- names(dataValues$rawDF)[inputateZipf]
-#             analysisValues$zipfTable <- zipf
-#         }
-#     })
+    observe({
+        if (!is.null(dataValues$rawDF) & input$dateZipf !=  "" ) {
+            dfZipf <- dataValues$rawDF
+            dfZipf <- as.data.frame(dfZipf[dfZipf[,input$dateZipf] > 0, input$dateZipf], check.names =  FALSE)
+            dfZipf <- dfZipf[order(-dfZipf[,1]), ]
+            ranks <- 1:length(dfZipf)
+            zipf <- data.frame(ranks, dfZipf, stringsAsFactors =  FALSE, check.names = FALSE)
+            colnames(zipf) <- c("ranks", "size")
+            zipf$dates <- names(dataValues$rawDF)[input$dateZipf]
+            analysisValues$zipfTable <- zipf
+        }
+    })
 
 exportTransitionMatrix <- reactive ({
   
@@ -136,21 +136,16 @@ exportTransitionMatrix <- reactive ({
 })
 
 
-exportLogNormalTable <- reactive({
-  if (!is.null(dataValues$lastCensusesTable)) {
-    df <- dataValues$lastCensusesTable
-    dfLG <- df
-    
-    datecol <- censusDate$datecol
-    
-    dfLG$datepop <- dfLG[,datecol]
-    dfLG <- subset(dfLG, datepop > 0)
-    
-    return(dfLG)
-  } else {
-    return()
-  }
-  
+
+observe({
+    if (!is.null(dataValues$rawDF) & input$dateLogNormal  != ""){
+        print(input$dateLogNormal)
+        dfLG <-  dataValues$rawDF
+        dfLG$datepop  <-  dataValues$rawDF[,input$dateLogNormal]
+        dfLG <- subset(dfLG, datepop > 0)
+        analysisValues$logNormalTable <- dfLG
+        
+    }
 })
     
 exportZipfResTable <- reactive({
@@ -392,7 +387,7 @@ return(res)
 
 
 output$plotLognormal <- renderPlot({
-  pops <- exportLogNormalTable()
+  pops <- analysisValues$logNormalTable
   LogPopulations <- log(pops$datepop)
    hist(LogPopulations, col="aquamarine3", freq=F)
   fit<-fitdistr(LogPopulations,"log-normal")$estimate
@@ -469,6 +464,9 @@ output$transitionMatrixRel <- renderTable({
                           choices=realColumns,
                           selected=realColumns[length(realColumns)])
         updateSelectInput(session=session, inputId="dateZipf",
+                          choices=realColumns,
+                          selected=realColumns[length(realColumns)])
+        updateSelectInput(session=session, inputId="dateLogNormal",
                           choices=realColumns,
                           selected=realColumns[length(realColumns)])
     }
