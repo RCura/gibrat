@@ -87,18 +87,18 @@ shinyServer(function(input, output, session) {
         }
     })
     
-    observe({
-        if (!is.null(dataValues$lastCensusesTable)) {
-            dfZipf <- dataValues$lastCensusesTable
-            dfZipf <- dfZipf[dfZipf[,censusDate$datecol] > 0, censusDate$datecol]
-            dfZipf <- dfZipf[order(-dfZipf[,1]), ]
-            ranks <- 1:nrow(dfZipf)
-            zipf <- data.frame(ranks, dfZipf, stringsAsFactors =  FALSE, check.names = FALSE)
-            colnames(zipf) <- c("ranks", "size")
-            zipf$dates <- names(dataValues$lastCensusTable)[censusDate$datecol]
-            analysisValues$zipfTable <- zipf
-        }
-    })
+#     observe({
+#         if (!is.null(dataValues$lastCensusesTable)) {
+#             dfZipf <- dataValues$lastCensusesTable
+#             dfZipf <- dfZipf[dfZipf[,censusDate$datecol] > 0, censusDate$datecol]
+#             dfZipf <- dfZipf[order(-dfZipf[,1]), ]
+#             ranks <- 1:nrow(dfZipf)
+#             zipf <- data.frame(ranks, dfZipf, stringsAsFactors =  FALSE, check.names = FALSE)
+#             colnames(zipf) <- c("ranks", "size")
+#             zipf$dates <- names(dataValues$lastCensusTable)[censusDate$datecol]
+#             analysisValues$zipfTable <- zipf
+#         }
+#     })
 
 exportTransitionMatrix <- reactive ({
   
