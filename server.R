@@ -146,22 +146,26 @@ shinyServer(function(input, output, session) {
         
     })
     
-    observeEvent(input$rumSim,{
+    observe({
+        if (!is.null(dataValues$calcDF) && input$runSim > 0) {
         df <- dataValues$calcDF
-        nbReps <- input$nbReplications
-        print("sim running")
-        computedValues$simData <- run_simulation(df=df, reps=nbReps)
-        print("sim  finished")
-        computedValues$simResults <-  computedValues$simData[,ncol(dataValues$calcDF),]
-        computedValues$simMeans <- apply(X=computedValues$simData[,,], 1:2, function(x){mean(x, na.rm=TRUE)})
-        computedValues$simSDs <- apply(X=computedValues$simData[,,], 1:2, function(x){return(sd(x, na.rm=TRUE))})
-        computedValues$meanRanks <- meanRanks <- create_rank_tables(obsdata=dataValues$calcDF, simMean=computedValues$simMeans)
-        
-        computedValues$simRanks <- as.data.frame(computedValues$meanRanks[1])
-        colnames(computedValues$simRanks) <- colnames(dataValues$calcDF)
-        
-        computedValues$obsRanks <- as.data.frame(computedValues$meanRanks[2])
-        colnames(computedValues$obsRanks) <- colnames(dataValues$calcDF)
+        isolate({
+            nbReps <- input$nbReplications
+            print("sim running")
+            computedValues$simData <- run_simulation(df=df, reps=nbReps)
+            print("sim  finished")
+            computedValues$simResults <-  computedValues$simData[,ncol(dataValues$calcDF),]
+            computedValues$simMeans <- apply(X=computedValues$simData[,,], 1:2, function(x){mean(x, na.rm=TRUE)})
+            computedValues$simSDs <- apply(X=computedValues$simData[,,], 1:2, function(x){return(sd(x, na.rm=TRUE))})
+            computedValues$meanRanks <- meanRanks <- create_rank_tables(obsdata=dataValues$calcDF, simMean=computedValues$simMeans)
+            
+            computedValues$simRanks <- as.data.frame(computedValues$meanRanks[1])
+            colnames(computedValues$simRanks) <- colnames(dataValues$calcDF)
+            
+            computedValues$obsRanks <- as.data.frame(computedValues$meanRanks[2])
+            colnames(computedValues$obsRanks) <- colnames(dataValues$calcDF)
+        })
+        }
     })
 
     
