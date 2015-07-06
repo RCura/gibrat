@@ -88,14 +88,14 @@ shinyServer(function(input, output, session) {
     })
     
 #     observe({
-#         if (!is.null(dataValues$lastCensusesTable)) {
-#             dfZipf <- dataValues$lastCensusesTable
-#             dfZipf <- dfZipf[dfZipf[,censusDate$datecol] > 0, censusDate$datecol]
+#         if (!is.null(dataValues$rawDF)) {
+#             dfZipf <- dataValues$rawDF
+#             dfZipf <- dfZipf[dfZipf[,input$dateZipf] > 0, input$dateZipf]
 #             dfZipf <- dfZipf[order(-dfZipf[,1]), ]
 #             ranks <- 1:nrow(dfZipf)
 #             zipf <- data.frame(ranks, dfZipf, stringsAsFactors =  FALSE, check.names = FALSE)
 #             colnames(zipf) <- c("ranks", "size")
-#             zipf$dates <- names(dataValues$lastCensusTable)[censusDate$datecol]
+#             zipf$dates <- names(dataValues$rawDF)[inputateZipf]
 #             analysisValues$zipfTable <- zipf
 #         }
 #     })
@@ -466,7 +466,11 @@ output$transitionMatrixRel <- renderTable({
         updateSelectInput(session=session, inputId="timeColumnSelected",
                           choices=realColumns, selected=realColumns)
         updateSelectInput(session=session, inputId="dateClasses",
-                          choices=realColumns, selected=realColumns[length(realColumns)])
+                          choices=realColumns,
+                          selected=realColumns[length(realColumns)])
+        updateSelectInput(session=session, inputId="dateZipf",
+                          choices=realColumns,
+                          selected=realColumns[length(realColumns)])
     }
     
     
