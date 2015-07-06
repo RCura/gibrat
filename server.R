@@ -29,16 +29,7 @@ shinyServer(function(input, output, session) {
                                      logNormalTable = NULL,
                                      zipfResTable = NULL
                                      )
-    
 
-    
-    censusDate <- reactiveValues(datecol= NULL)
-    observe({
-      #if (input$date == "Last Census") censusDate$datecol <- 4
-      #if (input$date == "Last Census - 1") censusDate$datecol <- 3
-      #if (input$date == "Last Census - 2") censusDate$datecol <- 2
-      
-    })
     
     observe({
         countryName <- input$dataset
@@ -100,46 +91,24 @@ shinyServer(function(input, output, session) {
         }
     })
 
-exportTransitionMatrix <- reactive ({
-  
-  if (!is.null(dataValues$lastCensusesTable)) {
-    df <- dataValues$lastCensusesTable
-      
-    if (input$datefinal == "Last Census") final <- 4
-    if (input$datefinal == "Last Census - 1") final <- 3
-    if (input$datefinal == "Last Census - 2") final <- 2
-    
-    if (input$dateinitial == "Last Census") initial <- 4
-    if (input$dateinitial == "Last Census - 1") initial <- 3
-    if (input$dateinitial == "Last Census - 2") initial <- 2
-    
-    valBreaks <- c(0, 10E3, 50E3, 100E3, 1E6, 10E6, 10E9)
-    
-    FinalPops <- df[,final]
-    InitialPops <- df[,initial]
-    FinalDate <- cut(x=FinalPops,breaks=valBreaks, include.lowest = TRUE, right = FALSE,
-                     labels = c("< 10k", "10k - 50k",
-                               "50k - 100k", "100k - 1M",
-                               "1M - 10M",  "> 10M")) 
-    InitialDate <- cut(x=InitialPops,breaks=valBreaks, include.lowest = TRUE, right = FALSE,
-                       labels = c("< 10k", "10k - 50k",
-                                 "50k - 100k", "100k - 1M",
-                                 "1M - 10M",  "> 10M")) 
-      
-    transitionMatrix <- table(InitialDate,FinalDate)
-    
-    return(transitionMatrix)
-  } else {
-    return()
-  }
-  
-})
-
-
+    observe({
+        if (!is.null(dataValues$rawDF) &  input$dateFinal  != "" & input$dateInitial  != ""){
+            df <- dataValues$rawDF
+            valBreaks <- c(0, 10E3, 50E3, 100E3, 1E6, 10E6, 10E9)
+            labelsBreaks <-  c("< 10k", "10k - 50k","50k - 100k", "100k - 1M","1M - 10M",  "> 10M")
+            FinalPops <- df[,input$dateFinal]
+            InitialPops <- df[,input$dateInitial]
+            FinalDate <- cut(x=FinalPops,breaks=valBreaks, include.lowest = TRUE,
+                             right = FALSE, labels = labelsBreaks) 
+            InitialDate <- cut(x=InitialPops,breaks=valBreaks, include.lowest = TRUE,
+                               right = FALSE, labels = labelsBreaks)
+            transitionMatrix <- table(InitialDate,FinalDate)
+            analysisValues$transitionMatrix <-  transitionMatrix
+        }
+    })
 
 observe({
     if (!is.null(dataValues$rawDF) & input$dateLogNormal  != ""){
-        print(input$dateLogNormal)
         dfLG <-  dataValues$rawDF
         dfLG$datepop  <-  dataValues$rawDF[,input$dateLogNormal]
         dfLG <- subset(dfLG, datepop > 0)
@@ -364,7 +333,7 @@ return(res)
     output$plotZipf <- renderPlot({
       zipf <- analysisValues$zipfTable
     
-    valBreaks=c(10000, 100000, 1000000, 10000000)
+    valBreaks=c(10E3, 100E3, 1E6, 10E6)
     
     p <-ggplot(zipf, aes(x=ranks, y=size)) 
     p + scale_y_log10(breaks=valBreaks) +
@@ -395,7 +364,7 @@ output$plotLognormal <- renderPlot({
   })
 
 output$estimLognormal <- renderTable({
-  pops <- exportLogNormalTable()
+  pops <- analysisValues$logNormalTable
   Populations <- as.data.frame(sort(pops$datepop,decreasing = TRUE))
   colnames(Populations) <- c("Pop")
  # Populations
@@ -412,11 +381,11 @@ output$estimLognormal <- renderTable({
 })
 
 output$transitionMatrix <- renderTable({
-  exportTransitionMatrix()
+  analysisValues$transitionMatrix
 })  
 
 output$transitionMatrixRel <- renderTable({
-    trMatrix <-  exportTransitionMatrix()
+    trMatrix <-  analysisValues$transitionMatrix
     relMatrix <-  trMatrix  / rowSums(trMatrix) * 100
     })  
   
@@ -467,6 +436,12 @@ output$transitionMatrixRel <- renderTable({
                           choices=realColumns,
                           selected=realColumns[length(realColumns)])
         updateSelectInput(session=session, inputId="dateLogNormal",
+                          choices=realColumns,
+                          selected=realColumns[length(realColumns)])
+        updateSelectInput(session=session, inputId="dateInitial",
+                          choices=realColumns,
+                          selected=realColumns[length(realColumns) -  1])
+        updateSelectInput(session=session, inputId="dateFinal",
                           choices=realColumns,
                           selected=realColumns[length(realColumns)])
     }
