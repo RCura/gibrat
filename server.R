@@ -347,23 +347,24 @@ return(res)
     
     
     output$sizeClasses <- renderDataTable({
-      df <- dataValues$lastCensusesTable
-      datecol <- censusDate$datecol
-      valBreaks <- c(0, 10E3, 50E3, 100E3, 1E6, 10E6, 10E9)
-      df$Pop <- df[,datecol]
-      df$N <- 1
-      df$SizeClasses <- cut(df[,datecol],breaks = valBreaks, include.lowest = TRUE, right = FALSE,
-                            labels = c("< 10k", "10k - 50k",
-                                       "50k - 100k", "100k - 1M",
-                                       "1M - 10M",  "> 10M"))
-      SizeClassTable <- aggregate(df[,c("N", "Pop")],
-                        by = list(df$SizeClasses), FUN = sum, na.rm = T )
-      colnames(SizeClassTable) <- c("SizeClass", "NumberOfCities", "TotalPopulation")
-      SizeClassTable$ProportionOfUrbanPopulation <- SizeClassTable$TotalPopulation / sum(SizeClassTable$TotalPopulation) * 100      
-      Total <- c("Total", sum(SizeClassTable$NumberOfCities), sum(SizeClassTable$TotalPopulation), 100)
-      SizeClassTable <- rbind (SizeClassTable, Total)
-      SizeClassTable
-    },options  =  list(dom = "t"))
+        df <- dataValues$rawDF
+        valBreaks <- c(0, 10E3, 50E3, 100E3, 1E6, 10E6, 10E9)
+        df$Pop <- df[,input$dateClasses]
+        df$N <- 1
+        df$SizeClasses <- cut(df[,input$dateClasses],breaks = valBreaks, include.lowest = TRUE, right = FALSE,
+                              labels = c("< 10k", "10k - 50k",
+                                         "50k - 100k", "100k - 1M",
+                                         "1M - 10M",  "> 10M"))
+        SizeClassTable <- aggregate(df[,c("N", "Pop")],
+                                    by = list(df$SizeClasses), FUN = sum, na.rm = T )
+        colnames(SizeClassTable) <- c("SizeClass", "NumberOfCities", "TotalPopulation")
+        SizeClassTable$ProportionOfUrbanPopulation <- SizeClassTable$TotalPopulation / sum(SizeClassTable$TotalPopulation) * 100      
+        Total <- c("Total", sum(SizeClassTable$NumberOfCities), sum(SizeClassTable$TotalPopulation), 100)
+        SizeClassTable <- rbind (SizeClassTable, Total)
+        SizeClassTable
+    }, 
+    options  =  list(dom = "t"))
+    
     
     output$plotZipf <- renderPlot({
       zipf <- analysisValues$zipfTable
@@ -464,6 +465,8 @@ output$transitionMatrixRel <- renderTable({
     updateInputs <- function(session, columns, realColumns){        
         updateSelectInput(session=session, inputId="timeColumnSelected",
                           choices=realColumns, selected=realColumns)
+        updateSelectInput(session=session, inputId="dateClasses",
+                          choices=realColumns, selected=realColumns[length(realColumns)])
     }
     
     
