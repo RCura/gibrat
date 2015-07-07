@@ -32,7 +32,8 @@ shinyServer(function(input, output, session) {
     analysisValues <- reactiveValues(zipfTable = NULL,
                                      transitionMatrix = NULL,
                                      logNormalTable = NULL,
-                                     zipfResTable = NULL
+                                     zipfResTable = NULL,
+                                     corGrowthSize = NULL
     )
     
     
@@ -79,58 +80,56 @@ shinyServer(function(input, output, session) {
         }
     })
     
-    output$rawGrowthTable <- renderDataTable({
-        dataValues$rawGrowthTable
-    })
+#     output$rawGrowthTable <- renderDataTable({
+#         dataValues$rawGrowthTable
+#     })
+#     
+#     output$rawGrowthTableSizeInit <- renderDataTable({
+#         dataValues$rawGrowthTableSizeInit
+#     })
     
-    output$rawGrowthTableSizeInit <- renderDataTable({
-        dataValues$rawGrowthTableSizeInit
+    observe({
+        if (!is.null(dataValues$rawGrowthTable)){
+            growthDF <- dataValues$rawGrowthTable
+            popDF <-  dataValues$rawGrowthTableSizeInit
+            periodNames <-  colnames(growthDF)
+            resultDF <- data.frame(Period = NA, Correlation  =  NA,  LogCorrelation = NA, NbCities  =  NA, stringsAsFactors = FALSE)
+            resultDF <- resultDF[-1,]
+            for (currCol in 1:ncol(growthDF)){
+                currentPeriod <-  colnames(growthDF)[currCol]
+                linCor <-  cor(x = growthDF[,currCol], y = popDF[,currCol], use = "pairwise.complete.obs", method = "pearson")
+                logCor <-  cor(x = growthDF[,currCol], y = log(popDF[,currCol]), use = "pairwise.complete.obs", method = "pearson")
+                numCities  <- nrow(popDF[!is.na(popDF[,currCol]),])
+                resultDF[nrow(resultDF)  +  1,] <-  c(currentPeriod, linCor, logCor, numCities)
+            }
+            analysisValues$corGrowthSize <- resultDF  
+        }
     })
     
     output$correlSizeGrowth <- renderDataTable({
-        growthDF <- dataValues$rawGrowthTable
-        popDF <-  dataValues$rawGrowthTableSizeInit
-        periodNames <-  colnames(growthDF)
-        resultDF <- data.frame(Period = NA, Correlation  =  NA,  LogCorrelation = NA, NbCities  =  NA, stringsAsFactors = FALSE)
-        resultDF <- resultDF[-1,]
-        for (currCol in 1:ncol(growthDF)){
-            currentPeriod <-  colnames(growthDF)[currCol]
-            linCor <-  cor(x = growthDF[,currCol], y = popDF[,currCol], use = "pairwise.complete.obs", method = "pearson")
-            logCor <-  cor(x = growthDF[,currCol], y = log(popDF[,currCol]), use = "pairwise.complete.obs", method = "pearson")
-            numCities  <- nrow(popDF[!is.na(popDF[,currCol]),])
-            resultDF[nrow(resultDF)  +  1,] <-  c(currentPeriod, linCor, logCor, numCities)
-        }
-        resultDF
+        analysisValues$corGrowthSize
     }, options  =  list(dom = "t"))
     
-#     plotOutput('correlSizeGrowthPlot'),
-#     DT::dataTableOutput('correlTemporal'),
-#     plotOutput('correlTemporalPlot')
-    
     output$correlSizeGrowthPlot <- renderPlot({
-        growthDF <- dataValues$rawGrowthTable
-        popDF <-  dataValues$rawGrowthTableSizeInit
-        periodNames <-  colnames(growthDF)
-        resultDF <- data.frame(InitDate = NA, Correlation  =  NA,  LogCorrelation = NA, NbCities  =  NA, stringsAsFactors = FALSE)
-        resultDF <- resultDF[-1,]
-        for (currCol in 1:ncol(growthDF)){
-            currentPeriod <-  as.numeric(colnames(popDF)[currCol])
-            linCor <-  cor(x = growthDF[,currCol], y = popDF[,currCol], use = "pairwise.complete.obs", method = "pearson")
-            logCor <-  cor(x = growthDF[,currCol], y = log(popDF[,currCol]), use = "pairwise.complete.obs", method = "pearson")
-            numCities  <- nrow(popDF[!is.na(popDF[,currCol]),])
-            resultDF[nrow(resultDF)  +  1,] <-  c(currentPeriod, linCor, logCor, numCities)
+        if (!is.null(analysisValues$corGrowthSize)){
+            resultDF <- analysisValues$corGrowthSize
+            resultDF$Period <- colnames(dataValues$rawGrowthTableSizeInit)
+            resultDF[c(1:4)] <- sapply(resultDF[c(1:4)],as.numeric)
+            plot(x = resultDF[,1], y =  resultDF[,2],
+                 ylim = c(min(resultDF[,2:3]), max(resultDF[,2:3])), main  = "Correlation Growth & Population size",
+                 xlab = "Initial period",  ylab =  "Correlation coefficient (Pearson)",  type  = "b",  col = "red")
+            lines(x = resultDF[,1], y =  resultDF[,3], type  = "b", col = "orange")
+            abline(h =  0, lty =  2)
+            legend(x="bottomleft",  legend = c("Growth rate & Population", "Growth rate  & log(Population)"),
+                   cex=1, seg.len=2,
+                   col=c('red', "orange"),
+                   pch=NA, lty=1,  lwd=1) 
         }
-        resultDF
-        plot(x = resultDF[,1], y =  resultDF[,2],
-             ylim = c(min(resultDF[,2:3]), max(resultDF[,2:3])), main  = "Correlation Growth & Population size",
-             xlab = "Initial period",  ylab =  "Correlation coefficient (Pearson)",  type  = "b",  col = "red")
-        lines(x = resultDF[,1], y =  resultDF[,3], type  = "b", col = "orange")
-        abline(h =  0, lty =  2)
-        legend(x="bottomleft",  legend = c("Growth rate & Population", "Growth rate  & log(Population)"),
-               cex=1, seg.len=2,
-               col=c('red', "orange"),
-               pch=NA, lty=1,  lwd=1)
+
     })
+    
+    #     DT::dataTableOutput('correlTemporal'),
+    #     plotOutput('correlTemporalPlot')
     
     observe({
         if (!is.null(dataValues$calcDF)) {
@@ -521,7 +520,8 @@ shinyServer(function(input, output, session) {
         analysisValues <- reactiveValues(zipfTable = NULL,
                                          transitionMatrix = NULL,
                                          logNormalTable = NULL,
-                                         zipfResTable = NULL
+                                         zipfResTable = NULL,
+                                         corGrowthSize = NULL
         )
         
         updateSelectInput(session=session, inputId="timeColumnSelected", choices=NA, selected="")

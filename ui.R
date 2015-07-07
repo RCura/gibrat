@@ -58,7 +58,10 @@ shinyUI(pageWithSidebar(
                      #DT::dataTableOutput('rawGrowthTableSizeInit'),
                      tags$h3('Growth rate and initial size correlation'),
                      DT::dataTableOutput('correlSizeGrowth'),
-                     plotOutput('correlSizeGrowthPlot')
+                     plotOutput('correlSizeGrowthPlot'),
+                     tags$h3('Temporal auto-correlation'),
+                     DT::dataTableOutput('correlTemporal'),
+                     plotOutput('correlTemporalPlot')
                      ),
             tabPanel("Gibrat Simulation",
                      numericInput(inputId="nbReplications", label="Number of replications", value=10, min=5, max=100, step=5 ),
