@@ -347,7 +347,8 @@ shinyServer(function(input, output, session) {
         maxpop <- max(max(cData),max(sData))
         minpop <- min(min(cData),min(sData))
         
-        plot(x=sort(rank(-cData), decreasing=T), y=sort(cData, decreasing=FALSE), log="xy", type="l", ylim=c(minpop,maxpop), xlab="Rang", ylab="Population", col="darkblue", lwd=2)
+        plot(x=sort(rank(-cData), decreasing=T), y=sort(cData, decreasing=FALSE), log="xy",
+             type="l", ylim=c(minpop,maxpop), xlab="Rang", ylab="Population", col="darkblue", lwd=2)
         # Création du graphe pour toutes les sims :
         for (i in 1:dim(sData)[2])
         {
@@ -359,6 +360,23 @@ shinyServer(function(input, output, session) {
         legend(x="topright", "Observé", cex=0.7, seg.len=4, col="darkblue" , lty=1, lwd=2 )
         legend(x="bottomleft", "Simulées", cex=0.7, seg.len=4, col="darkgrey" , lty=1 )
         legend(x="bottomright", "Moyenne des simulations", cex=0.7, seg.len=4, col="firebrick" , lty=1, lwd=2 )
+    })
+    
+    output$gibratExpectation <- renderPlot({
+        if (is.null(computedValues$simMeans)){ return()}
+        lastTime <- ncol(dataValues$calcDF)
+        
+        obsData <- dataValues$calcDF[,lastTime]
+        simData <- computedValues$simMeans[,lastTime]
+        
+        minData <- min(obsData, simData, na.rm = TRUE)
+        maxData <- max(obsData, simData, na.rm = TRUE)
+        
+        plot(x =obsData, y = simData, log = "xy", type = "p",
+             xlim = c(minData,maxData), ylim = c(minData, maxData),
+             xlab = "Observed Pop", ylab = "Simulated Pop", col = "firebrick")
+        abline(a = 0, b = 1, col = "black")
+        
     })
     
     output$top10 <- renderDataTable({

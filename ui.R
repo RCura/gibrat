@@ -73,7 +73,10 @@ shinyUI(pageWithSidebar(
                                       tags$div(style="float:left;",
                                                tags$img(src="loading-gif-animation.gif",height=50,width=50)),
                                       h4("Computation can be long, be patient...")),
-                     plotOutput('gibratRankSize'),
+                     fluidRow(
+                         column(6, plotOutput('gibratRankSize')),
+                         column(6, plotOutput('gibratExpectation'))
+                         ),
                      downloadButton(outputId="simresultDL", label="Download simulations results")),
             #tabPanel("Correlations", tableOutput('correlations')),
             tabPanel("About", includeMarkdown(path="README.md"))
