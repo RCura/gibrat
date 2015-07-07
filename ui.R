@@ -53,6 +53,13 @@ shinyUI(pageWithSidebar(
                      tags$h4('Average yearly growth rate'),
                      plotOutput("growthPlot"),
                      downloadButton(outputId="dlButton", label="Download table")),
+            tabPanel("Gibrat Correlations",
+                     #DT::dataTableOutput('rawGrowthTable'),
+                     #DT::dataTableOutput('rawGrowthTableSizeInit'),
+                     tags$h3('Growth rate and initial size correlation'),
+                     DT::dataTableOutput('correlSizeGrowth'),
+                     plotOutput('correlSizeGrowthPlot')
+                     ),
             tabPanel("Gibrat Simulation",
                      numericInput(inputId="nbReplications", label="Number of replications", value=10, min=5, max=100, step=5 ),
                      tags$hr(),

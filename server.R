@@ -4,6 +4,7 @@ library(MASS)
 library(poweRlaw)
 library(DT)
 library(reshape2)
+library(dplyr)
 # TODO : Add a computation of correlation for each census date observed/ mean of simulated
 
 # Define server logic for random distribution application
@@ -15,6 +16,8 @@ shinyServer(function(input, output, session) {
                                  filtredDF = NULL,
                                  calcDF = NULL,
                                  growthTable = NULL,
+                                 rawGrowthTable = NULL,
+                                 rawGrowthTableSizeInit = NULL,
                                  lastCensusesTable  = NULL)
 
     
@@ -69,8 +72,64 @@ shinyServer(function(input, output, session) {
     
     observe({
         if (!is.null(dataValues$calcDF)) {
-            dataValues$growthTable <- compute_yearly_growth_table(dataValues$calcDF)
+            YGT <- compute_yearly_growth_table(dataValues$calcDF)
+            dataValues$growthTable <- YGT$Summary
+            dataValues$rawGrowthTable <-  YGT$fullDF
+            dataValues$rawGrowthTableSizeInit <-  YGT$growthRateSizeInitial 
         }
+    })
+    
+    output$rawGrowthTable <- renderDataTable({
+        dataValues$rawGrowthTable
+    })
+    
+    output$rawGrowthTableSizeInit <- renderDataTable({
+        dataValues$rawGrowthTableSizeInit
+    })
+    
+    output$correlSizeGrowth <- renderDataTable({
+        growthDF <- dataValues$rawGrowthTable
+        popDF <-  dataValues$rawGrowthTableSizeInit
+        periodNames <-  colnames(growthDF)
+        resultDF <- data.frame(Period = NA, Correlation  =  NA,  LogCorrelation = NA, NbCities  =  NA, stringsAsFactors = FALSE)
+        resultDF <- resultDF[-1,]
+        for (currCol in 1:ncol(growthDF)){
+            currentPeriod <-  colnames(growthDF)[currCol]
+            linCor <-  cor(x = growthDF[,currCol], y = popDF[,currCol], use = "pairwise.complete.obs", method = "pearson")
+            logCor <-  cor(x = growthDF[,currCol], y = log(popDF[,currCol]), use = "pairwise.complete.obs", method = "pearson")
+            numCities  <- nrow(popDF[!is.na(popDF[,currCol]),])
+            resultDF[nrow(resultDF)  +  1,] <-  c(currentPeriod, linCor, logCor, numCities)
+        }
+        resultDF
+    }, options  =  list(dom = "t"))
+    
+#     plotOutput('correlSizeGrowthPlot'),
+#     DT::dataTableOutput('correlTemporal'),
+#     plotOutput('correlTemporalPlot')
+    
+    output$correlSizeGrowthPlot <- renderPlot({
+        growthDF <- dataValues$rawGrowthTable
+        popDF <-  dataValues$rawGrowthTableSizeInit
+        periodNames <-  colnames(growthDF)
+        resultDF <- data.frame(InitDate = NA, Correlation  =  NA,  LogCorrelation = NA, NbCities  =  NA, stringsAsFactors = FALSE)
+        resultDF <- resultDF[-1,]
+        for (currCol in 1:ncol(growthDF)){
+            currentPeriod <-  as.numeric(colnames(popDF)[currCol])
+            linCor <-  cor(x = growthDF[,currCol], y = popDF[,currCol], use = "pairwise.complete.obs", method = "pearson")
+            logCor <-  cor(x = growthDF[,currCol], y = log(popDF[,currCol]), use = "pairwise.complete.obs", method = "pearson")
+            numCities  <- nrow(popDF[!is.na(popDF[,currCol]),])
+            resultDF[nrow(resultDF)  +  1,] <-  c(currentPeriod, linCor, logCor, numCities)
+        }
+        resultDF
+        plot(x = resultDF[,1], y =  resultDF[,2],
+             ylim = c(min(resultDF[,2:3]), max(resultDF[,2:3])), main  = "Correlation Growth & Population size",
+             xlab = "Initial period",  ylab =  "Correlation coefficient (Pearson)",  type  = "b",  col = "red")
+        lines(x = resultDF[,1], y =  resultDF[,3], type  = "b", col = "orange")
+        abline(h =  0, lty =  2)
+        legend(x="bottomleft",  legend = c("Growth rate & Population", "Growth rate  & log(Population)"),
+               cex=1, seg.len=2,
+               col=c('red', "orange"),
+               pch=NA, lty=1,  lwd=1)
     })
     
     observe({
@@ -447,6 +506,8 @@ shinyServer(function(input, output, session) {
                                      filtredDF = NULL,
                                      calcDF = NULL,
                                      growthTable = NULL,
+                                     rawGrowthTable = NULL,
+                                     rawGrowthTableSizeInit = NULL,
                                      lastCensusesTable  = NULL)
         
         computedValues <- reactiveValues(simData = NULL,

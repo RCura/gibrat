@@ -6,6 +6,7 @@ library(parallel)
 compute_yearly_growth_table <- function(df)
 {
     growthratetable <- df[1:ncol(df)-1]
+    initSizeTable <- df[1:ncol(df)-1]
     # Creation des noms de périodes
     for (i in 1:ncol(growthratetable))
     {
@@ -17,7 +18,8 @@ compute_yearly_growth_table <- function(df)
     growthratetable[,] <- NA
     growthratetable_matrix <- as.matrix(growthratetable)
     df_matrix <- as.matrix(df)
-    
+    initSizeTable[,] <-  NA
+    initSizeTable_matrix <-  as.matrix(initSizeTable)
     # On le remplit avec les taux de croissance
     for (rownb in 1:nrow(growthratetable_matrix))
     {
@@ -28,15 +30,17 @@ compute_yearly_growth_table <- function(df)
             firstPop <- df_matrix[rownb, colnb]
             lastPop <- df_matrix[rownb, colnb + 1]
             growthratetable_matrix[rownb, colnb] <- ((lastPop / firstPop)^(1/diffDate) - 1) * 100
+            initSizeTable_matrix[rownb, colnb] <-  firstPop
         }
     }
     growthratetable[] <- growthratetable_matrix[]
+    initSizeTable[] <-  initSizeTable_matrix[]
     #View(growthratetable[1000:nrow(growthratetable), ])
     growthparameters <- growthratetable[1:2,]
     rownames(growthparameters) <- c("Annual Mean Growth (%)", "Annual Growth StDev (%)")
     growthparameters[1,] <- apply(X=growthratetable, MARGIN=2, FUN=function(x){return(mean(x, na.rm=TRUE))}) # Calcul de la moyenne
     growthparameters[2,] <- apply(X=growthratetable, MARGIN=2, FUN=function(x){ return(sd(x, na.rm=TRUE))}) # Calcul de l'écart-type
-    return(growthparameters)
+    return(list(fullDF  =  growthratetable, growthRateSizeInitial =  initSizeTable,  Summary  = growthparameters))
 }
 
 expand_growth_table <- function(growthTable){
@@ -60,7 +64,7 @@ expand_growth_table <- function(growthTable){
 ############ RUN_SIMULATION ############
 run_simulation <- function (df, reps)
 {
-    yearlyGT <- compute_yearly_growth_table(df)
+    yearlyGT <- compute_yearly_growth_table(df)$Summary
     growth_table <- expand_growth_table(yearlyGT)
     
     simList <- mclapply(X=c(1:reps),function (x) run_replication(obs_data=df, growthtable=growth_table ), mc.cores=24)
