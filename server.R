@@ -394,6 +394,32 @@ shinyServer(function(input, output, session) {
         } 
     })
     
+    output$zipfEvolutionSummary <-  renderDataTable({
+        if (!is.null(dataValues$calcDF)){
+            SumTable <- data.frame(Year  =  NA, Slope  = NA, R2  = NA, LowerBound  =  NA, UpperBound  =  NA, NbCities  = NA)
+            SumTable <-  SumTable[-1,]
+            for (currentTime  in  colnames(dataValues$calcDF)){
+                dfZipf <-  dataValues$calcDF
+                dfZipf <- as.data.frame(dfZipf[dfZipf[,currentTime] > 10E3, currentTime], check.names =  FALSE)
+                dfZipf <-  na.omit(dfZipf)
+                dfZipf <- dfZipf[order(-dfZipf[,1]), ]
+                ranks <- 1:length(dfZipf)
+                zipf <- data.frame(ranks, dfZipf, stringsAsFactors =  FALSE, check.names = FALSE)
+                colnames(zipf) <- c("ranks", "size")
+               myLM <- lm(log(size)  ~  log(ranks), data = zipf, na.action = na.omit)
+               myConfInt <- confint(myLM, level = 0.95)
+               currentResults <-  c(currentTime,
+                                    myLM$coefficients[[2]],
+                                    summary(myLM)$adj.r.squared,
+                                    myConfInt[2,1],
+                                    myConfInt[2,2],
+                                    nrow(zipf))
+               SumTable[nrow(SumTable) + 1,] <- currentResults
+            }
+            SumTable
+        }
+    },options  =  list(dom = "t"))
+    
     updateInputs <- function(session, columns, realColumns){        
         updateSelectInput(session=session, inputId="timeColumnSelected",
                           choices=realColumns, selected=realColumns)
