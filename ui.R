@@ -77,6 +77,10 @@ shinyUI(pageWithSidebar(
                          column(6, plotOutput('gibratRankSize')),
                          column(6, plotOutput('gibratExpectation'))
                          ),
+                     fluidRow(
+                         column(6, plotOutput('meanEvolution')),
+                         column(6, plotOutput('sdEvolution'))
+                     ),
                      downloadButton(outputId="simresultDL", label="Download simulations results")),
             #tabPanel("Correlations", tableOutput('correlations')),
             tabPanel("About", includeMarkdown(path="README.md"))

@@ -379,6 +379,42 @@ shinyServer(function(input, output, session) {
         
     })
     
+    output$meanEvolution <- renderPlot({
+        if (is.null(computedValues$simMeans)){ return()}
+        obsData <- dataValues$calcDF
+        simData <- as.data.frame(computedValues$simMeans, check.names = FALSE)
+        simData <- simData[,colnames(simData) %in% colnames(obsData)]
+        #print(str(simData))
+        obsMean <- unlist(lapply(obsData, mean, na.rm = TRUE))
+        simMean <- unlist(lapply(simData, mean, na.rm = TRUE))
+        maxData <- max(obsMean, simMean)
+        minData <- min(obsMean, simMean)
+        plot(x = colnames(obsData), y = obsMean, ylim = c(minData, maxData),
+             type="b", col="darkblue", log="y", xlab = "Year", ylab = "Mean Population (log)")
+        lines(x = colnames(obsData), y = simMean, type = "b", col = "firebrick")
+        legend(x="bottomright", c("Observed mean", "Simulated mean"), cex=0.7, seg.len=4, col=c("darkblue","firebrick") , lty=1, lwd=2 )
+        
+    })
+    
+    output$sdEvolution <- renderPlot({
+        if (is.null(computedValues$simMeans)){ return()}
+        obsData <- dataValues$calcDF
+        simData <- as.data.frame(computedValues$simMeans, check.names = FALSE)
+        simData <- simData[,colnames(simData) %in% colnames(obsData)]
+        #print(str(simData))
+        obsSD <- unlist(lapply(obsData, sd, na.rm = TRUE))
+        simSD <- unlist(lapply(simData, sd, na.rm = TRUE))
+        maxData <- max(obsSD, simSD)
+        minData <- min(obsSD, simSD)
+        plot(x = colnames(obsData), y = obsSD, ylim = c(minData, maxData),
+             type="b", col="darkblue", log="y", xlab = "Year", ylab = "Population stdev (log)")
+        lines(x = colnames(obsData), y = simSD, type = "b", col = "firebrick")
+        legend(x="bottomright", c("Pop. observed stdev", "Pop. simulated stdev"), cex=0.7, seg.len=4, col=c("darkblue","firebrick") , lty=1, lwd=2 )
+        
+    })
+#     column(6, plotOutput('meanEvolution')),
+#     column(6, plotOutput('sdEvolution'))
+    
     output$top10 <- renderDataTable({
         dataValues$lastCensusesTable
     }, rownames = FALSE, options = list(pageLength = 10, dom  = "t", order = list(4, 'desc')))
