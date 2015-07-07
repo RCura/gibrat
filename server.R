@@ -151,9 +151,7 @@ shinyServer(function(input, output, session) {
         df <- dataValues$calcDF
         isolate({
             nbReps <- input$nbReplications
-            print("sim running")
             computedValues$simData <- run_simulation(df=df, reps=nbReps)
-            print("sim  finished")
             computedValues$simResults <-  computedValues$simData[,ncol(dataValues$calcDF),]
             computedValues$simMeans <- apply(X=computedValues$simData[,,], 1:2, function(x){mean(x, na.rm=TRUE)})
             computedValues$simSDs <- apply(X=computedValues$simData[,,], 1:2, function(x){return(sd(x, na.rm=TRUE))})
@@ -324,20 +322,22 @@ shinyServer(function(input, output, session) {
     })
     
     output$estimLognormal <- renderTable({
-        pops <- analysisValues$logNormalTable
-        Populations <- as.data.frame(sort(pops$datepop,decreasing = TRUE))
-        colnames(Populations) <- c("Pop")
-        # Populations
-        ln_m <- dislnorm$new(Populations$Pop)
-        est_ln <- estimate_xmin(ln_m)
-        ln_m$setXmin(est_ln)
-        
-        ln_estim = data.frame(matrix(ncol = 3, nrow = 1))
-        ln_estim[1,1] <- ln_m$pars[[1]]
-        ln_estim[1,2] <- ln_m$pars[[2]]
-        ln_estim[1,3] <- ln_m$xmin
-        colnames(ln_estim) <- c("Mean", "Standard Deviation", "X min")
-        ln_estim
+        if (input$runLogNormal >  0){
+            pops <- analysisValues$logNormalTable
+            Populations <- as.data.frame(sort(pops$datepop,decreasing = TRUE))
+            colnames(Populations) <- c("Pop")
+            # Populations
+            ln_m <- dislnorm$new(Populations$Pop)
+            est_ln <- estimate_xmin(ln_m)
+            ln_m$setXmin(est_ln)
+            
+            ln_estim = data.frame(matrix(ncol = 3, nrow = 1))
+            ln_estim[1,1] <- ln_m$pars[[1]]
+            ln_estim[1,2] <- ln_m$pars[[2]]
+            ln_estim[1,3] <- ln_m$xmin
+            colnames(ln_estim) <- c("Mean", "Standard Deviation", "X min")
+            ln_estim
+        }
     })
     
     output$transitionMatrix <- renderTable({

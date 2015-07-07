@@ -26,6 +26,7 @@ shinyUI(pageWithSidebar(
                      selectInput("dateLogNormal", "Date", choices="", multiple=FALSE,  selectize = TRUE),
                      plotOutput('plotLognormal'),
                      h3("Parameters of a fitted lognormal distribution"),
+                     actionButton("runLogNormal", "Compute LogNormal parameters"),
                      tableOutput('estimLognormal'),
                      h4("Computation can be long, be patient..."),
                      "cf. Gillespie C. S., 2015, Fitting heavy tailed distributions : 
