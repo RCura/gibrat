@@ -15,6 +15,7 @@ shinyServer(function(input, output, session) {
                                  calcDF = NULL,
                                  growthTable = NULL,
                                  lastCensusesTable  = NULL)
+
     
     computedValues <- reactiveValues(simData = NULL,
                                      simResults = NULL,
@@ -58,8 +59,8 @@ shinyServer(function(input, output, session) {
     
     observe({
         timeColumns <- input$timeColumnSelected
-        if (!is.null(timeColumns) && timeColumns %in% names(dataValues$rawDF)){
-            calcData <- dataValues$rawDF[timeColumns]
+        if (!is.null(timeColumns) && all(timeColumns %in% colnames(dataValues$rawDF))){
+            calcData <- dataValues$rawDF[,timeColumns]
             row.names(calcData) <- dataValues$rawDF$ID
             dataValues$calcDF <- calcData
         }
@@ -407,6 +408,8 @@ shinyServer(function(input, output, session) {
     }
     
     resetValues <- function(){
+        
+        
         dataValues <- reactiveValues(rawDF = NULL,
                                      filtredDF = NULL,
                                      calcDF = NULL,
