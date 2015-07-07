@@ -67,7 +67,7 @@ run_simulation <- function (df, reps)
     yearlyGT <- compute_yearly_growth_table(df)$Summary
     growth_table <- expand_growth_table(yearlyGT)
     
-    simList <- mclapply(X=c(1:reps),function (x) run_replication(obs_data=df, growthtable=growth_table ), mc.cores=1)
+    simList <- mclapply(X=c(1:reps),function (x) run_replication(obs_data=df, growthtable=growth_table ), mc.cores=12)
     L <- length(simList)
     RC <- dim(simList[[1]])
     simArray <- array(unlist(simList), dim=c(RC[1], RC[2], L))
