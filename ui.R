@@ -25,9 +25,10 @@ shinyUI(pageWithSidebar(
             tabPanel("Zipf Evolution",
                     plotOutput("zipfEvolution"),
                     DT::dataTableOutput("zipfEvolutionSummary")),
-            tabPanel("LogNormal", 
+            tabPanel("LogNormality", 
                      selectInput("dateLogNormal", "Date", choices="", multiple=FALSE,  selectize = TRUE),
                      plotOutput('plotLognormal'),
+                     DT::dataTableOutput('logNormalSummary'),
                      h3("Parameters of a fitted lognormal distribution"),
                      actionButton("runLogNormal", "Compute LogNormal parameters"),
                      tableOutput('estimLognormal'),
@@ -74,7 +75,7 @@ shinyUI(pageWithSidebar(
                                       h4("Computation can be long, be patient...")),
                      plotOutput('gibratRankSize'),
                      downloadButton(outputId="simresultDL", label="Download simulations results")),
-            tabPanel("Correlations", tableOutput('correlations')),
+            #tabPanel("Correlations", tableOutput('correlations')),
             tabPanel("About", includeMarkdown(path="README.md"))
             
         )

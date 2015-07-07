@@ -67,7 +67,7 @@ run_simulation <- function (df, reps)
     yearlyGT <- compute_yearly_growth_table(df)$Summary
     growth_table <- expand_growth_table(yearlyGT)
     
-    simList <- mclapply(X=c(1:reps),function (x) run_replication(obs_data=df, growthtable=growth_table ), mc.cores=24)
+    simList <- mclapply(X=c(1:reps),function (x) run_replication(obs_data=df, growthtable=growth_table ), mc.cores=1)
     L <- length(simList)
     RC <- dim(simList[[1]])
     simArray <- array(unlist(simList), dim=c(RC[1], RC[2], L))
@@ -144,4 +144,33 @@ plotRankSize <- function(baseDF){
         theme_bw()
     
     return(ranksizePlot)
+}
+
+#https://users.dimi.uniud.it/~massimo.franceschet/R/fit.html
+lognormal <- function(d, limit=2500) {
+    
+    # load MASS package to use fitdistr
+    # mle = fitdistr(d, "lognormal");
+    # meanlog = mle$estimate["meanlog"];
+    # sdlog = mle$estimate["sdlog"];
+    
+    # MLE for lognormal distribution
+    meanlog = mean(log(d));
+    sdlog = sd(log(d));
+    
+    # compute KS statistic
+    t = ks.test(d, "plnorm", meanlog = meanlog, sdlog = sdlog);
+    
+    # compute p-value
+    count = 0;
+    for (i in 1:limit) {
+        syn = rlnorm(length(d), meanlog = meanlog, sdlog = sdlog);
+        meanlog2 = mean(log(syn));
+        sdlog2 = sd(log(syn));
+        t2 = ks.test(syn, "plnorm", meanlog = meanlog2, sdlog = sdlog2);
+        if(t2$stat >= t$stat) {count = count + 1};
+    }
+    
+    return(list(meanlog=meanlog, sdlog=sdlog, stat = t$stat, p = count/limit, KSp = t$p));
+    
 }

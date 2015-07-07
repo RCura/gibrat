@@ -109,7 +109,7 @@ shinyServer(function(input, output, session) {
     
     output$correlSizeGrowth <- renderDataTable({
         analysisValues$corGrowthSize
-    }, options  =  list(dom = "t"))
+    }, rownames = FALSE, options  =  list(dom = "t"))
     
     output$correlSizeGrowthPlot <- renderPlot({
         if (!is.null(analysisValues$corGrowthSize)){
@@ -150,7 +150,7 @@ shinyServer(function(input, output, session) {
     
     output$correlTemporal <- renderDataTable({
         analysisValues$corTemporal
-    }, options = list(dom = 't'))
+    }, rownames = FALSE, options = list(dom = 't'))
     
     output$correlTemporalPlot <-  renderPlot({
         if (!is.null(dataValues$rawGrowthTable)){
@@ -214,7 +214,7 @@ shinyServer(function(input, output, session) {
         if (!is.null(dataValues$rawDF) && input$dateLogNormal  != "" && input$dateLogNormal %in% names(dataValues$rawDF)){
             dfLG <-  dataValues$rawDF
             dfLG$datepop  <-  dataValues$rawDF[,input$dateLogNormal]
-            dfLG <- subset(dfLG, datepop > 0)
+            dfLG <- subset(dfLG, datepop > 10E3)
             analysisValues$logNormalTable <- dfLG
             
         }
@@ -315,7 +315,7 @@ shinyServer(function(input, output, session) {
     
     output$growthTable <- renderDataTable({
         exportGrowthTable()
-    }, options = list(length = 50, dom = "t"))
+    },rownames = FALSE, options = list(length = 50, dom = "t"))
     
     
     
@@ -363,7 +363,7 @@ shinyServer(function(input, output, session) {
     
     output$top10 <- renderDataTable({
         dataValues$lastCensusesTable
-    }, options = list(pageLength = 10, dom  = "t", order = list(5, 'desc')))
+    }, rownames = FALSE, options = list(pageLength = 10, dom  = "t", order = list(4, 'desc')))
     
     
     output$sizeClasses <- renderDataTable({
@@ -382,7 +382,7 @@ shinyServer(function(input, output, session) {
         Total <- c("Total", sum(SizeClassTable$NumberOfCities), sum(SizeClassTable$TotalPopulation), 100)
         SizeClassTable <- rbind (SizeClassTable, Total)
         SizeClassTable
-    }, 
+    }, rownames = FALSE,
     options  =  list(dom = "t"))
     
     
@@ -414,10 +414,45 @@ shinyServer(function(input, output, session) {
     output$plotLognormal <- renderPlot({
         pops <- analysisValues$logNormalTable
         LogPopulations <- log(pops$datepop)
-        hist(LogPopulations, col="aquamarine3", freq=F)
-        fit<-fitdistr(LogPopulations,"log-normal")$estimate
-        lines(dlnorm(0:max(LogPopulations),fit[1],fit[2]), lwd=3)  
+        hist(LogPopulations, col="aquamarine3", freq=FALSE, breaks = 20)
+        fit<-fitdistr(LogPopulations,densfun = "log-normal")$estimate
+        lines(dlnorm(0:max(LogPopulations),fit[1],fit[2]), lwd=3)
+        
     })
+    
+    output$logNormalSummary <- renderDataTable({
+        pops <- analysisValues$logNormalTable
+        studiedPops <- pops$datepop
+        if (length(studiedPops) > 5000){
+            studiedPops <- sample(x = studiedPops, size = 5000)
+        }
+        skewedPops <- log(studiedPops - 10E3)
+        resultDF <- data.frame(method = "Shapiro-Wilk (no threshold)",
+                               nbCities = length(log(studiedPops)),
+                               meanLog = mean(log(studiedPops)),
+                               sdLog = sd(log(studiedPops)),
+                               p.value = shapiro.test(log(studiedPops))$p.value,
+                               stringsAsFactors = FALSE, check.names = FALSE)
+        # See here : http://abcdr.guyader.pro/676-comment-faire-un-test-de-normalite-avec-r-le-test-de-shapiro-wilk/
+        resultDF[2,] <-  c("Shapiro-Wilk (Pop - 10k)", length(skewedPops),
+                           mean(skewedPops), sd(skewedPops), shapiro.test(skewedPops)$p.value)
+        KStest <- lognormal(studiedPops, limit=2500)
+        resultDF[3,] <- c("Kolmogorov-Smirnoff (no threshold)",
+                          length(studiedPops),
+                          KStest$meanlog,
+                          KStest$sdlog,
+                          KStest$KSp
+                          )
+        KStestThreshold <- lognormal((studiedPops - 10E3), limit=2500)
+        resultDF[4,] <- c("Kolmogorov-Smirnoff (Pop - 10k)",
+                          length(studiedPops),
+                          KStestThreshold$meanlog,
+                          KStestThreshold$sdlog,
+                          KStestThreshold$KSp
+        )
+        # See here : https://users.dimi.uniud.it/~massimo.franceschet/R/fit.html
+    resultDF
+    }, rownames = FALSE, options = list(dom = 't'))
     
     output$estimLognormal <- renderTable({
         if (input$runLogNormal >  0){
@@ -514,7 +549,7 @@ shinyServer(function(input, output, session) {
             }
             SumTable
         }
-    },options  =  list(dom = "t"))
+    },rownames = FALSE,options  =  list(dom = "t"))
     
     updateInputs <- function(session, columns, realColumns){        
         updateSelectInput(session=session, inputId="timeColumnSelected",
