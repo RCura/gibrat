@@ -33,7 +33,8 @@ shinyServer(function(input, output, session) {
                                      transitionMatrix = NULL,
                                      logNormalTable = NULL,
                                      zipfResTable = NULL,
-                                     corGrowthSize = NULL
+                                     corGrowthSize = NULL,
+                                     corTemporal  =  NULL
     )
     
     
@@ -80,13 +81,13 @@ shinyServer(function(input, output, session) {
         }
     })
     
-#     output$rawGrowthTable <- renderDataTable({
-#         dataValues$rawGrowthTable
-#     })
-#     
-#     output$rawGrowthTableSizeInit <- renderDataTable({
-#         dataValues$rawGrowthTableSizeInit
-#     })
+    output$rawGrowthTable <- renderDataTable({
+        dataValues$rawGrowthTable
+    })
+    
+    output$rawGrowthTableSizeInit <- renderDataTable({
+        dataValues$rawGrowthTableSizeInit
+    })
     
     observe({
         if (!is.null(dataValues$rawGrowthTable)){
@@ -128,8 +129,45 @@ shinyServer(function(input, output, session) {
 
     })
     
-    #     DT::dataTableOutput('correlTemporal'),
-    #     plotOutput('correlTemporalPlot')
+    
+    observe({
+        if (!is.null(dataValues$rawGrowthTable)){
+            growthTable <-  dataValues$rawGrowthTable
+            resultDF  <-  data.frame(Period  = NA, Label = NA, Correlation  = NA, NbCities =  NA,
+                                     check.names  =  FALSE, stringsAsFactors = FALSE)
+            resultDF <-  resultDF[-1,]
+            for (currCol  in  (1:(ncol(growthTable)-1))){
+                currPeriod <- paste(colnames(growthTable)[currCol], colnames(growthTable)[currCol + 1], sep=" -> ")
+                currLabel <- as.character(as.roman(currCol))
+                currCor <- cor(x = growthTable[,currCol], y = growthTable[,currCol + 1],
+                               use = "pairwise.complete.obs", method = "pearson")
+                currNb <-  nrow(na.omit(growthTable[,c(currCol, currCol + 1)]))
+                resultDF[nrow(resultDF) + 1,] <-  c(currPeriod, currLabel, currCor, currNb)
+            }
+            analysisValues$corTemporal <-  resultDF
+        }
+    })
+    
+    output$correlTemporal <- renderDataTable({
+        analysisValues$corTemporal
+    }, options = list(dom = 't'))
+    
+    output$correlTemporalPlot <-  renderPlot({
+        if (!is.null(dataValues$rawGrowthTable)){
+            baseDF <-  analysisValues$corTemporal
+            plot(x = as.roman(baseDF$Label), y = as.numeric(baseDF$Correlation),
+                 xaxt  ="n", type  ="b", col ="red",
+                 xlab  = "Period", ylab  = "Correlation coefficient (Pearson)",
+                 main ="Temporal auto-correlation")
+            axis(side = 1, at=as.numeric(as.roman(baseDF$Label)), labels=baseDF$Label)
+            abline(h = 0, lty =2)
+            legend(x="bottomleft", 
+                   legend =  paste(baseDF$Label,  baseDF$Period, sep  =" : "),
+                   seg.len=0,
+                   col="black",
+                   pch=NA, lty=0,  lwd=0) 
+        }
+    })
     
     observe({
         if (!is.null(dataValues$calcDF)) {
@@ -309,14 +347,14 @@ shinyServer(function(input, output, session) {
         maxpop <- max(max(cData),max(sData))
         minpop <- min(min(cData),min(sData))
         
-        plot(x=sort(rank(-cData), decreasing=T), y=sort(cData, decreasing=F), log="xy", type="l", ylim=c(minpop,maxpop), xlab="Rang", ylab="Population", col="darkblue", lwd=2)
+        plot(x=sort(rank(-cData), decreasing=T), y=sort(cData, decreasing=FALSE), log="xy", type="l", ylim=c(minpop,maxpop), xlab="Rang", ylab="Population", col="darkblue", lwd=2)
         # Création du graphe pour toutes les sims :
         for (i in 1:dim(sData)[2])
         {
-            lines(x=sort(rank(-sData[,i]), decreasing=T), y=sort(sData[,i], decreasing=F), col="darkgrey", lwd=1)
+            lines(x=sort(rank(-sData[,i]), decreasing=TRUE), y=sort(sData[,i], decreasing=FALSE), col="darkgrey", lwd=1)
         }
-        lines(x=sort(rank(mData), decreasing=T), y=sort(mData, decreasing=F), col="firebrick", lwd=2)
-        lines(x=sort(rank(-cData), decreasing=T), y=sort(cData, decreasing=F), col="darkblue", lwd=2)
+        lines(x=sort(rank(mData), decreasing=TRUE), y=sort(mData, decreasing=FALSE), col="firebrick", lwd=2)
+        lines(x=sort(rank(-cData), decreasing=TRUE), y=sort(cData, decreasing=FALSE), col="darkblue", lwd=2)
         title("Courbes Rang-Taille observées et simulées en fin de période")
         legend(x="topright", "Observé", cex=0.7, seg.len=4, col="darkblue" , lty=1, lwd=2 )
         legend(x="bottomleft", "Simulées", cex=0.7, seg.len=4, col="darkgrey" , lty=1 )
@@ -521,7 +559,8 @@ shinyServer(function(input, output, session) {
                                          transitionMatrix = NULL,
                                          logNormalTable = NULL,
                                          zipfResTable = NULL,
-                                         corGrowthSize = NULL
+                                         corGrowthSize = NULL,
+                                         corTemporal = NULL
         )
         
         updateSelectInput(session=session, inputId="timeColumnSelected", choices=NA, selected="")
