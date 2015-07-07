@@ -22,6 +22,8 @@ shinyUI(pageWithSidebar(
                      plotOutput('plotZipf'),
                      h3("Parameters of a fitted power-law distribution"),
                      tableOutput('estimZipf')),
+            tabPanel("Zipf Evolution",
+                    plotOutput("zipfEvolution")),
             tabPanel("LogNormal", 
                      selectInput("dateLogNormal", "Date", choices="", multiple=FALSE,  selectize = TRUE),
                      plotOutput('plotLognormal'),

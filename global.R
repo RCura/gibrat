@@ -118,3 +118,26 @@ create_rank_tables <- function (obsdata, simMean)
     obsRank[] <- obsRank_matrix[]
     return(list(simRank, obsRank))
 }
+
+plotRankSize <- function(baseDF){
+    baseDF$ID <- row.names(baseDF)
+    meltedDF <- melt(data=baseDF,id.vars="ID")
+    
+    timeValues <- unique(meltedDF$variable)
+    for (currentTime in timeValues){
+        myValues <- meltedDF[meltedDF$variable == currentTime, 'value']
+        meltedDF[meltedDF$variable == currentTime,'rank'] <- rank(x=-myValues)
+    }
+    ranksizePlot <- ggplot(data=meltedDF, environment = environment()) + 
+        geom_line(aes(x=rank, y=value, group=variable, colour=as.numeric(levels(variable)[variable])), size=1) +
+        scale_colour_gradient(low="skyblue3", high="firebrick4", "Date") +
+        scale_alpha(range=c(0.1,1)) +
+        scale_y_log10() +
+        scale_x_log10() +
+        labs(title = "Rank-Size evolution",
+             x = "Rank",
+             y = "Population") +
+        theme_bw()
+    
+    return(ranksizePlot)
+}

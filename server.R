@@ -3,6 +3,7 @@ library(ggplot2)
 library(MASS)
 library(poweRlaw)
 library(DT)
+library(reshape2)
 # TODO : Add a computation of correlation for each census date observed/ mean of simulated
 
 # Define server logic for random distribution application
@@ -385,7 +386,13 @@ shinyServer(function(input, output, session) {
         # A chaque date, écart-type (ou C.V ?) simulé/observé.
     })
     
-    
+    output$zipfEvolution <- renderPlot({
+        if (!is.null(dataValues$calcDF)){
+            plotData <- dataValues$calcDF
+            rankSize <- plotRankSize(plotData)
+            print(rankSize)
+        } 
+    })
     
     updateInputs <- function(session, columns, realColumns){        
         updateSelectInput(session=session, inputId="timeColumnSelected",
