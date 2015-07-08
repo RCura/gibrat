@@ -174,3 +174,31 @@ lognormal <- function(d, limit=2500) {
     return(list(meanlog=meanlog, sdlog=sdlog, stat = t$stat, p = count/limit, KSp = t$p));
     
 }
+
+lognormal10 <- function(d, limit=2500) {
+    
+    # load MASS package to use fitdistr
+    # mle = fitdistr(d, "lognormal");
+    # meanlog = mle$estimate["meanlog"];
+    # sdlog = mle$estimate["sdlog"];
+    
+    # MLE for lognormal distribution
+    meanlog = mean(log10(d));
+    sdlog = sd(log10(d));
+    
+    # compute KS statistic
+    t = ks.test(d, "plnorm", meanlog = meanlog, sdlog = sdlog);
+    
+    # compute p-value
+    count = 0;
+    for (i in 1:limit) {
+        syn = rlnorm(length(d), meanlog = meanlog, sdlog = sdlog);
+        meanlog2 = mean(log10(syn));
+        sdlog2 = sd(log10(syn));
+        t2 = ks.test(syn, "plnorm", meanlog = meanlog2, sdlog = sdlog2);
+        if(t2$stat >= t$stat) {count = count + 1};
+    }
+    
+    return(list(meanlog=meanlog, sdlog=sdlog, stat = t$stat, p = count/limit, KSp = t$p));
+    
+}
