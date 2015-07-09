@@ -466,11 +466,17 @@ shinyServer(function(input, output, session) {
     
     output$plotLognormal <- renderPlot({
         pops <- analysisValues$logNormalTable
-        LogPopulations <- log(pops$datepop)
-        Log10Populations <- log10(pops$datepop)
-        hist(Log10Populations, col="aquamarine3", freq=FALSE, breaks = 20)
-        fit<-fitdistr(Log10Populations,densfun = "log-normal")$estimate
-        lines(dlnorm(0:max(LogPopulations),fit[1],fit[2]), lwd=3)
+        basePops <- pops$datepop[pops$datepop > 10E3]
+        skewedPops <- basePops - 10E3
+        meanLog <- mean(log(basePops))
+        sdLog <- sd(log(basePops))
+        
+        skmeanLog <- mean(log(skewedPops))
+        sksdLog <- sd(log(skewedPops))
+        hist(pops$datepop, col="aquamarine3", prob=TRUE, breaks = 100)
+        #fit<-fitdistr(LogPopulations,densfun = "log-normal")$estimate
+        lines(dlnorm(0:max(pops$datepop),meanLog,sdLog), lwd=2, col="blue")
+        lines(dlnorm(0:max(skewedPops), skmeanLog, sksdLog), lwd=2 ,col = "red")
         
     })
     
