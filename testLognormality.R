@@ -15,12 +15,14 @@ currentData <-  myData[myData  < threshold]
 hist(currentData, prob = TRUE, breaks = 100)
 lines(dlnorm(seq(0,threshold,by = 1), meanlog= mean(log(currentData)), sdlog = sd(log(currentData))), type = "l",col = "blue", lwd  =  2)
 
-
 baseData <- myData - 10E3
 baseData <- baseData[baseData > 0]
-hist(log(baseData), breaks = 100, prob = TRUE)
+ticks <- log(c(10002,15E3,25E3,50E3,100E3, 1E6, 10E6, 20E6)  - 10E3)
+labels <-  format(c(10000,15E3,25E3,50E3,100E3, 1E6, 10E6, 20E6), scientific = TRUE, big.mark = ",", trim=TRUE, justify="right", digits = 4)
+hist(log(baseData), breaks = 100, prob = TRUE, xaxt  ="n", xlab="Population (log-scale)", ylab="Density")
+axis(side = 1, at=ticks, labels=FALSE, las=1)
+text(cex=.8, x=ticks, y=-0.02, labels, xpd=TRUE, srt=45, pos=1)
 lines(dnorm(x = 0:max(log(baseData)), mean = mean(log(baseData)), sd = sd(log(baseData))), type = "l", col = "blue", lwd = 2)
-
 
 baseData2 <- data.frame(x = baseData, y = baseData + 10E3, z = log(baseData), w = log(baseData + 10E3))
 fit1 <- fitdistr(baseData2$x, densfun = "lognormal")

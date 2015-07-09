@@ -468,75 +468,44 @@ shinyServer(function(input, output, session) {
         pops <- analysisValues$logNormalTable
         basePops <- pops$datepop[pops$datepop > 10E3]
         skewedPops <- basePops - 10E3
-        meanLog <- mean(log(basePops))
-        sdLog <- sd(log(basePops))
-        
-        skmeanLog <- mean(log(skewedPops))
-        sksdLog <- sd(log(skewedPops))
-        hist(basePops, col="aquamarine3", prob=TRUE, breaks = 100)
-        #fit<-fitdistr(LogPopulations,densfun = "log-normal")$estimate
-        lines(dlnorm(0:max(basePops),meanLog,sdLog), lwd=2, col="blue")
-        lines(dlnorm(0:max(skewedPops), skmeanLog, sksdLog), lwd=2 ,col = "red")
-
-        
+        logSkewedPops <-  log(skewedPops)
+        meanLog <- mean(logSkewedPops)
+        sdLog <- sd(logSkewedPops)
+        labels <-  c(10000,15E3,25E3,50E3,100E3, 1E6, 10E6, 20E6)
+        ticks <- log(labels - 10E3)
+        hist(logSkewedPops, breaks = 50, prob = TRUE, xaxt  ="n", xlab="Population (log-scale)", ylab="Density")
+        axis(side = 1, at=ticks, labels=labels, las=1)
+        #text(cex=.8, x=ticks, y=-0.02, labels, xpd=TRUE, srt=45, pos=1)
+        lines(dnorm(x = 0:max(logSkewedPops), mean = meanLog, sd = sdLog), type = "l", col = "blue", lwd = 2)
     })
     
     output$logNormalSummary <- renderDataTable({
         pops <- analysisValues$logNormalTable
-        studiedPops <- pops$datepop
-        if (length(studiedPops) > 5000){
-            studiedPops <- sample(x = studiedPops, size = 5000)
+        basePops <- pops$datepop[pops$datepop > 10E3]
+        skewedPops <- basePops - 10E3
+        logSkewedPops <-  log(skewedPops)
+        meanLog <- mean(logSkewedPops)
+        sdLog <- sd(logSkewedPops)
+        print(length(logSkewedPops))
+        if (length(logSkewedPops) > 5000){
+            testData <- sample(x = logSkewedPops, size = 5000)
+        } else {
+            testData <-  logSkewedPops
         }
-        skewedPops <- log(studiedPops - 10E3)
-        resultDF <- data.frame(method = "Shapiro-Wilk (no threshold)",
-                               nbCities = length(log(studiedPops)),
-                               meanLog = mean(log(studiedPops)),
-                               sdLog = sd(log(studiedPops)),
-                               p.value = shapiro.test(log(studiedPops))$p.value,
+        resultDF <- data.frame(method = "Shapiro-Wilk ($Xhi_O =  10E3$)",
+                               nbCities = length(testData),
+                               meanLog = meanLog,
+                               sdLog = sdLog,
+                               p.value = shapiro.test(testData)$p.value,
                                stringsAsFactors = FALSE, check.names = FALSE)
         # See here : http://abcdr.guyader.pro/676-comment-faire-un-test-de-normalite-avec-r-le-test-de-shapiro-wilk/
-        resultDF[2,] <-  c("Shapiro-Wilk (Pop - 10k)", length(skewedPops),
-                           mean(skewedPops), sd(skewedPops), shapiro.test(skewedPops)$p.value)
-        KStest <- lognormal(studiedPops, limit=2500)
-        resultDF[3,] <- c("Kolmogorov-Smirnoff (no threshold)",
-                          length(studiedPops),
-                          KStest$meanlog,
-                          KStest$sdlog,
-                          KStest$KSp
+        KStest <- ks.test(logSkewedPops, "pnorm")
+        resultDF[2,] <- c("Kolmogorov-Smirnoff ($Xhi_O =  10E3$)",
+                          length(logSkewedPops),
+                          meanLog,
+                          sdLog,
+                          KStest$p.value
                           )
-        KStestThreshold <- lognormal((studiedPops - 10E3), limit=2500)
-        resultDF[4,] <- c("Kolmogorov-Smirnoff (Pop - 10k)",
-                          length(studiedPops),
-                          KStestThreshold$meanlog,
-                          KStestThreshold$sdlog,
-                          KStestThreshold$KSp
-        )
-        
-        
-        skewedPops10 <- log10(studiedPops - 10E3)
-        resultDF[5,] <- c("Shapiro-Wilk (log 10 - no threshold)",
-                               length(log10(studiedPops)),
-                              mean(log10(studiedPops)),
-                               sd(log10(studiedPops)),
-                               shapiro.test(log10(studiedPops))$p.value)
-        # See here : http://abcdr.guyader.pro/676-comment-faire-un-test-de-normalite-avec-r-le-test-de-shapiro-wilk/
-        resultDF[6,] <-  c("Shapiro-Wilk (log10 - Pop - 10k)", length(skewedPops10),
-                           mean(skewedPops10), sd(skewedPops10), shapiro.test(skewedPops10)$p.value)
-        KStest10 <- lognormal10(studiedPops, limit=2500)
-        resultDF[7,] <- c("Kolmogorov-Smirnoff (log10 -  no threshold)",
-                          length(studiedPops),
-                          KStest10$meanlog,
-                          KStest10$sdlog,
-                          KStest10$KSp
-        )
-        KStestThreshold10 <- lognormal10((studiedPops - 10E3), limit=2500)
-        resultDF[8,] <- c("Kolmogorov-Smirnoff (log10  -  Pop - 10k)",
-                          length(studiedPops),
-                          KStestThreshold10$meanlog,
-                          KStestThreshold10$sdlog,
-                          KStestThreshold10$KSp
-        )
-        # See here : https://users.dimi.uniud.it/~massimo.franceschet/R/fit.html
     resultDF
     }, rownames = FALSE, options = list(dom = 't'))
     
