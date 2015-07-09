@@ -473,10 +473,11 @@ shinyServer(function(input, output, session) {
         
         skmeanLog <- mean(log(skewedPops))
         sksdLog <- sd(log(skewedPops))
-        hist(pops$datepop, col="aquamarine3", prob=TRUE, breaks = 100)
+        hist(basePops, col="aquamarine3", prob=TRUE, breaks = 100)
         #fit<-fitdistr(LogPopulations,densfun = "log-normal")$estimate
-        lines(dlnorm(0:max(pops$datepop),meanLog,sdLog), lwd=2, col="blue")
+        lines(dlnorm(0:max(basePops),meanLog,sdLog), lwd=2, col="blue")
         lines(dlnorm(0:max(skewedPops), skmeanLog, sksdLog), lwd=2 ,col = "red")
+
         
     })
     
