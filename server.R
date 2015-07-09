@@ -473,7 +473,7 @@ shinyServer(function(input, output, session) {
         sdLog <- sd(logSkewedPops)
         labels <-  c(10000,15E3,25E3,50E3,100E3, 1E6, 10E6, 20E6)
         ticks <- log(labels - 10E3)
-        hist(logSkewedPops, breaks = 50, prob = TRUE, xaxt  ="n", xlab="Population (log-scale)", ylab="Density")
+        hist(logSkewedPops, breaks = 50, prob = TRUE, xaxt  ="n", main =  "Histogram  of populations (cut at Χ₀ =  10E3)", xlab="Population (log-scale)", ylab="Density")
         axis(side = 1, at=ticks, labels=labels, las=1)
         #text(cex=.8, x=ticks, y=-0.02, labels, xpd=TRUE, srt=45, pos=1)
         lines(dnorm(x = 0:max(logSkewedPops), mean = meanLog, sd = sdLog), type = "l", col = "blue", lwd = 2)
@@ -492,7 +492,7 @@ shinyServer(function(input, output, session) {
         } else {
             testData <-  logSkewedPops
         }
-        resultDF <- data.frame(method = "Shapiro-Wilk ($Xhi_O =  10E3$)",
+        resultDF <- data.frame(method = "Shapiro-Wilk (Χ₀ =  10E3)",
                                nbCities = length(testData),
                                meanLog = meanLog,
                                sdLog = sdLog,
@@ -500,7 +500,7 @@ shinyServer(function(input, output, session) {
                                stringsAsFactors = FALSE, check.names = FALSE)
         # See here : http://abcdr.guyader.pro/676-comment-faire-un-test-de-normalite-avec-r-le-test-de-shapiro-wilk/
         KStest <- ks.test(logSkewedPops, "pnorm")
-        resultDF[2,] <- c("Kolmogorov-Smirnoff ($Xhi_O =  10E3$)",
+        resultDF[2,] <- c("Kolmogorov-Smirnoff (Χ₀ =  10E3)",
                           length(logSkewedPops),
                           meanLog,
                           sdLog,
