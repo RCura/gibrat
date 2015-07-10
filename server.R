@@ -32,6 +32,7 @@ shinyServer(function(input, output, session) {
     analysisValues <- reactiveValues(zipfTable = NULL,
                                      transitionMatrix = NULL,
                                      logNormalTable = NULL,
+                                     fittedLogNormalTable  = NULL,
                                      zipfResTable = NULL,
                                      corGrowthSize = NULL,
                                      corTemporal  =  NULL
@@ -473,10 +474,26 @@ shinyServer(function(input, output, session) {
         sdLog <- sd(logSkewedPops)
         labels <-  c(10000,15E3,25E3,50E3,100E3, 1E6, 10E6, 20E6)
         ticks <- log(labels - 10E3)
-        hist(logSkewedPops, breaks = 50, prob = TRUE, xaxt  ="n", main =  "Histogram  of populations (cut at Χ₀ =  10E3)", xlab="Population (log-scale)", ylab="Density")
+        hist(logSkewedPops, breaks = 50, prob = TRUE, xaxt  ="n", main =  "Histogram of populations\n(cut at Χ₀ =  10E3)", xlab="Population (log-scale)", ylab="Density")
         axis(side = 1, at=ticks, labels=labels, las=1)
         #text(cex=.8, x=ticks, y=-0.02, labels, xpd=TRUE, srt=45, pos=1)
         lines(dnorm(x = 0:max(logSkewedPops), mean = meanLog, sd = sdLog), type = "l", col = "blue", lwd = 2)
+    })
+    
+    output$qqplotLognormal <-  renderPlot({
+        pops <- analysisValues$logNormalTable
+        basePops <- pops$datepop[pops$datepop > 10E3]
+        skewedPops <- basePops - 10E3
+        logSkewedPops <-  log(skewedPops)
+        
+        labels <-  c(10000,15E3,25E3,50E3,100E3, 1E6, 10E6, 20E6)
+        ticks <- log(labels - 10E3)
+        
+        qqnorm(y = logSkewedPops, xaxt= "n", yaxt  = "n", type="p", pch=19, cex=1, col=rgb(0, 0, 1, 0.1))
+        qqline(logSkewedPops)
+        axis(side = 1, at=ticks, labels=labels, las=1, cex.axis=0.6)
+        axis(side = 2, at=ticks, labels=labels, las=1, cex.axis=0.6)
+        
     })
     
     output$logNormalSummary <- renderDataTable({
@@ -486,7 +503,6 @@ shinyServer(function(input, output, session) {
         logSkewedPops <-  log(skewedPops)
         meanLog <- mean(logSkewedPops)
         sdLog <- sd(logSkewedPops)
-        print(length(logSkewedPops))
         if (length(logSkewedPops) > 5000){
             testData <- sample(x = logSkewedPops, size = 5000)
         } else {
@@ -509,24 +525,30 @@ shinyServer(function(input, output, session) {
     resultDF
     }, rownames = FALSE, options = list(dom = 't'))
     
+    observeEvent(input$runLogNormal,{
+        pops <- analysisValues$logNormalTable
+        Populations <- as.data.frame(sort(pops$datepop,decreasing = TRUE))
+        colnames(Populations) <- c("Pop")
+        # Populations
+        ln_m <- dislnorm$new(Populations$Pop)
+        est_ln <- estimate_xmin(ln_m)
+        ln_m$setXmin(est_ln)
+        
+        ln_estim = data.frame(matrix(ncol = 3, nrow = 1))
+        ln_estim[1,1] <- ln_m$pars[[1]]
+        ln_estim[1,2] <- ln_m$pars[[2]]
+        ln_estim[1,3] <- ln_m$xmin
+        colnames(ln_estim) <- c("Mean", "Standard Deviation", "X min")
+        analysisValues$fittedLogNormalTable  <-  ln_estim
+    })
+    
     output$estimLognormal <- renderTable({
-        if (input$runLogNormal >  0){
-            pops <- analysisValues$logNormalTable
-            Populations <- as.data.frame(sort(pops$datepop,decreasing = TRUE))
-            colnames(Populations) <- c("Pop")
-            # Populations
-            ln_m <- dislnorm$new(Populations$Pop)
-            est_ln <- estimate_xmin(ln_m)
-            ln_m$setXmin(est_ln)
-            
-            ln_estim = data.frame(matrix(ncol = 3, nrow = 1))
-            ln_estim[1,1] <- ln_m$pars[[1]]
-            ln_estim[1,2] <- ln_m$pars[[2]]
-            ln_estim[1,3] <- ln_m$xmin
-            colnames(ln_estim) <- c("Mean", "Standard Deviation", "X min")
-            ln_estim
+        if (!is.null(analysisValues$fittedLogNormalTable)){
+           analysisValues$fittedLogNormalTable
         }
     })
+
+        
     
     output$transitionMatrix <- renderTable({
         analysisValues$transitionMatrix
@@ -648,6 +670,7 @@ shinyServer(function(input, output, session) {
         analysisValues <- reactiveValues(zipfTable = NULL,
                                          transitionMatrix = NULL,
                                          logNormalTable = NULL,
+                                         fittedLogNormalTable  = NULL,
                                          zipfResTable = NULL,
                                          corGrowthSize = NULL,
                                          corTemporal = NULL

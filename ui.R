@@ -27,7 +27,10 @@ shinyUI(pageWithSidebar(
                     DT::dataTableOutput("zipfEvolutionSummary")),
             tabPanel("LogNormality", 
                      selectInput("dateLogNormal", "Date", choices="", multiple=FALSE,  selectize = TRUE),
-                     plotOutput('plotLognormal'),
+                    fluidRow(
+                      column(6, plotOutput('plotLognormal')),
+                      column(6,  plotOutput('qqplotLognormal'))
+                    ),
                      DT::dataTableOutput('logNormalSummary'),
                      h3("Parameters of a fitted lognormal distribution"),
                      actionButton("runLogNormal", "Compute LogNormal parameters"),
