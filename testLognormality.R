@@ -20,9 +20,14 @@ baseData <- baseData[baseData > 0]
 ticks <- log(c(10002,15E3,25E3,50E3,100E3, 1E6, 10E6, 20E6)  - 10E3)
 labels <-  format(c(10000,15E3,25E3,50E3,100E3, 1E6, 10E6, 20E6), scientific = TRUE, big.mark = ",", trim=TRUE, justify="right", digits = 4)
 hist(log(baseData), breaks = 100, prob = TRUE, xaxt  ="n", xlab="Population (log-scale)", ylab="Density")
-axis(side = 1, at=ticks, labels=FALSE, las=1)
-text(cex=.8, x=ticks, y=-0.02, labels, xpd=TRUE, srt=45, pos=1)
+axis(side = 1, at=ticks, labels=labels, las=1)
 lines(dnorm(x = 0:max(log(baseData)), mean = mean(log(baseData)), sd = sd(log(baseData))), type = "l", col = "blue", lwd = 2)
+
+blob <- dnorm(x = 0:max(log(baseData)), mean = mean(log(baseData)), sd = sd(log(baseData)))
+qqnorm(x  =  blob, y = log(baseData), xaxt= "n", yaxt  = "n", type="p", pch=19, cex=1, col=rgb(0, 0, 1, 0.07))
+qqline(log(baseData))
+axis(side = 1, at=ticks, labels=labels, las=1, cex.axis=0.6)
+axis(side = 2, at=ticks, labels=labels, las=1, cex.axis=0.6)
 
 baseData2 <- data.frame(x = baseData, y = baseData + 10E3, z = log(baseData), w = log(baseData + 10E3))
 fit1 <- fitdistr(baseData2$x, densfun = "lognormal")
