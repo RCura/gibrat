@@ -35,3 +35,80 @@ fit2 <- fitdistr(baseData2$z, densfun = "normal")
 ggplot(data=baseData2,  aes(x=x)) + geom_histogram(aes(y = ..density..), binwidth=10E3) +
     stat_function(fun = dnorm, size=1, color='blue', args = list(fit1$estimate[1], fit1$estimate[2]))
 
+library(poweRlaw)
+library(staTools)
+
+pops <- Russia
+pops$datepop  <-  Russia$`2010`
+Populations <- as.data.frame(sort(pops$datepop,decreasing = TRUE))
+colnames(Populations) <- c("Pop")
+# Populations
+ln_m <- dislnorm$new(Populations$Pop)
+print(ln_m)
+system.time(est_ln <- estimate_xmin(ln_m))
+
+pl_m  <- displo(x = Populations$Pop, summary = TRUE)
+est_plo  <-  getXmin2(o = pl_m)
+system.time(est_ln2 <- getXmin(o = blob))
+system.time(est_ln3 <- getXmin2(blob))
+print(est_ln)
+print(est_ln2)
+print(est_ln3)
+
+ln_m$setXmin(est_ln)
+print(ln_m)
+
+ln_estim = data.frame(matrix(ncol = 3, nrow = 1))
+ln_estim[1,1] <- ln_m$pars[[1]]
+ln_estim[1,2] <- ln_m$pars[[2]]
+ln_estim[1,3] <- ln_m$xmin
+colnames(ln_estim) <- c("Mean", "Standard Deviation", "X min")
+print(ln_estim)
+analysisValues$fittedLogNormalTable  <-  ln_estim
+
+
+getXmin3 <- function(o, g = 10E3, c = 10, k = 5, xmax = 1E6){
+    est = list()
+    x = o$x
+    N = o$nx
+    g = g - (g * (100 - c)/100)
+    xmins = o$ux[o$ux <= xmax]
+    START = xmins[which.min(abs(xmins - g))]
+    if (START > g) {
+        START = xmins[which.min(abs(xmins - g))]
+    }
+    if (length(START) == 0) {
+        START = 1
+    }
+    xmins = xmins[which(xmins == START):length(xmins)]
+    L = length(xmins)
+    KS = numeric()
+    alpha = numeric()
+    xu = sort(x)
+    len_xu = length(xu)
+    for (i in 1:L) {
+        n = length(xu[xu >= xmins[i]])
+        q = xu[(N - n + 1):len_xu]
+        q = q[q <= xmax]
+        S = pmf(q)$y
+        alpha = c(alpha, 1 + length(q)/sum(log(q/(xmins[i] - 
+                                                      0.5))))
+        P = ddispl(unique(q), xmin = xmins[i], alpha = alpha[i])
+        KS = c(KS, max(abs(P - S)))
+    }
+    est$xmin = xmins[which.min(KS)]
+    est$alpha = alpha[which.min(KS)]
+    o$xmin = xmins[which.min(KS)]
+    o$alpha = alpha[which.min(KS)]
+    o$sigma = (alpha[which.min(KS)] - 1)/sqrt(N)
+    return(est)
+}
+
+
+pops <- China
+pops$datepop  <-  pops$`2010`
+Populations <- as.data.frame(sort(pops$datepop,decreasing = TRUE))
+colnames(Populations) <- c("Pop")
+
+pl_m  <- displo(x = Populations$Pop, summary = TRUE)
+getXmin3(pl_m)

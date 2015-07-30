@@ -531,14 +531,17 @@ shinyServer(function(input, output, session) {
         colnames(Populations) <- c("Pop")
         # Populations
         ln_m <- dislnorm$new(Populations$Pop)
-        est_ln <- estimate_xmin(ln_m)
+        print(ln_m)
+        est_ln <- estimate_xmin(m = ln_m)
         ln_m$setXmin(est_ln)
+        print(ln_m)
         
         ln_estim = data.frame(matrix(ncol = 3, nrow = 1))
         ln_estim[1,1] <- ln_m$pars[[1]]
         ln_estim[1,2] <- ln_m$pars[[2]]
         ln_estim[1,3] <- ln_m$xmin
         colnames(ln_estim) <- c("Mean", "Standard Deviation", "X min")
+        print(ln_estim)
         analysisValues$fittedLogNormalTable  <-  ln_estim
     })
     
@@ -686,6 +689,43 @@ shinyServer(function(input, output, session) {
     
     
     
+    
+    getXmin3 <- function(o, g = 10E3, c = 10, k = 5, xmax = 1E6){
+        est = list()
+        x = o$x
+        N = o$nx
+        g = g - (g * (100 - c)/100)
+        xmins = o$ux[o$ux <= xmax]
+        START = xmins[which.min(abs(xmins - g))]
+        if (START > g) {
+            START = xmins[which.min(abs(xmins - g))]
+        }
+        if (length(START) == 0) {
+            START = 1
+        }
+        xmins = xmins[which(xmins == START):length(xmins)]
+        L = length(xmins)
+        KS = numeric()
+        alpha = numeric()
+        xu = sort(x)
+        len_xu = length(xu)
+        for (i in 1:L) {
+            n = length(xu[xu >= xmins[i]])
+            q = xu[(N - n + 1):len_xu]
+            q = q[q <= xmax]
+            S = pmf(q)$y
+            alpha = c(alpha, 1 + length(q)/sum(log(q/(xmins[i] - 
+                                                          0.5))))
+            P = ddispl(unique(q), xmin = xmins[i], alpha = alpha[i])
+            KS = c(KS, max(abs(P - S)))
+        }
+        est$xmin = xmins[which.min(KS)]
+        est$alpha = alpha[which.min(KS)]
+        o$xmin = xmins[which.min(KS)]
+        o$alpha = alpha[which.min(KS)]
+        o$sigma = (alpha[which.min(KS)] - 1)/sqrt(N)
+        return(est)
+    }
     
 })
 

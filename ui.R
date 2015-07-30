@@ -36,6 +36,7 @@ shinyUI(pageWithSidebar(
                      actionButton("runLogNormal", "Compute LogNormal parameters"),
                      tableOutput('estimLognormal'),
                      h4("Computation can be long, be patient..."),
+                    HTML("<h4><em>Note that depending on the database, it could also break the application</em></h4>"),
                      "cf. Gillespie C. S., 2015, Fitting heavy tailed distributions : 
                  the poweRlaw package, Journal of Statistical Software, Vol. 64, Issue 2."),
             tabPanel("Transition Matrices", 
