@@ -81,10 +81,20 @@ run_simulation <- function (df, reps)
 ############ RUN_REPLICATION ############
 run_replication <- function (obs_data, growthtable)
 {
-    initial_data <- obs_data[1]
+    initial_data <- obs_data[,1]
     timesteps <- length(growthtable)
     my_replication <- obs_data
-    my_replication[,2:timesteps+1] <- NA
+    firstDate <- min(as.numeric(colnames(obs_data)))
+    lastDate <- max(as.numeric(colnames(obs_data)))
+    nbDates <- lastDate - firstDate + 1
+    emptyDF <- as.data.frame(setNames(replicate(nbDates,numeric(0), simplify = F), 1:nbDates),
+                             check.names = FALSE)
+    colnames(emptyDF) <- firstDate:lastDate 
+    emptyDF <- emptyDF[, !(names(emptyDF) %in% colnames(obs_data))]
+    emptyDF[1:nrow(obs_data),] <- NA
+    emptyDF <- cbind(emptyDF, obs_data)
+    
+    my_replication <- emptyDF[, order(colnames(emptyDF))]
     cities_nb <- nrow(my_replication)
     growthmean <- as.double(growthtable[1,])
     growthsd <- as.double(growthtable[2,])
@@ -97,8 +107,11 @@ run_replication <- function (obs_data, growthtable)
         {
             currentPop <- my_replication_matrix[j,i]
             normalGrowthRate <- rnorm(1, mean=currentGrowthMean, sd=currentGrowthSd)
+            
             newPop <- currentPop * (1 + normalGrowthRate/100)
-            my_replication_matrix[j,i+1] <-  ifelse(newPop > 0, newPop, 1)
+            if (!is.na(newPop)) {
+                my_replication_matrix[j,i+1] <-  ifelse(newPop > 0, newPop, 1)    
+            }
         }
     }
     my_replication[] <- my_replication_matrix[]

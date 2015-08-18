@@ -339,11 +339,12 @@ shinyServer(function(input, output, session) {
     output$gibratRankSize <- renderPlot({
         if (is.null(computedValues$simMeans)){ return()}
         
-        lastTime <- ncol(dataValues$calcDF)
+        lastRealTime <- ncol(dataValues$calcDF)
+        lastSimTime <- dim(computedValues$simData)[2]
         
-        cData <- na.omit(dataValues$calcDF[,lastTime])
-        sData <- na.omit(computedValues$simData[,lastTime,])
-        mData <- na.omit(computedValues$simMeans[,lastTime])
+        cData <- na.omit(dataValues$calcDF[,lastRealTime])
+        sData <- na.omit(computedValues$simData[,lastSimTime,])
+        mData <- na.omit(computedValues$simMeans[,lastSimTime])
         
         maxpop <- max(max(cData),max(sData))
         minpop <- min(min(cData),min(sData))
@@ -365,10 +366,11 @@ shinyServer(function(input, output, session) {
     
     output$gibratExpectation <- renderPlot({
         if (is.null(computedValues$simMeans)){ return()}
-        lastTime <- ncol(dataValues$calcDF)
+        lastObsTime <- ncol(dataValues$calcDF)
+        lastSimTime <- dim(computedValues$simMeans)[2]
         
-        obsData <- dataValues$calcDF[,lastTime]
-        simData <- computedValues$simMeans[,lastTime]
+        obsData <- dataValues$calcDF[,lastObsTime]
+        simData <- computedValues$simMeans[,lastSimTime]
         
         minData <- min(obsData, simData, na.rm = TRUE)
         maxData <- max(obsData, simData, na.rm = TRUE)
