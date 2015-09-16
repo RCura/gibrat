@@ -633,6 +633,100 @@ shinyServer(function(input, output, session) {
         }
     })
     
+    output$shapeComparison <- renderPlot({
+        maxyear <- BRICS %>%
+            group_by(system) %>%
+            summarise(yearmax = max(year))
+        
+        lastPops <- BRICS %>%
+            semi_join(maxyear, by= c("system",  "year" = "yearmax"))
+        
+        lastPops$logpop <- log(lastPops$pop)
+        
+        myLogNorm <- function(x, mean, sd){ dnorm(x, mean = mean, sd = sd)}
+        
+        xyDF<- data.frame(system = character(), x=numeric(), y=numeric(), stringsAsFactors=FALSE) 
+        
+        minX <- min(lastPops$logpop, na.rm = TRUE)
+        maxX <- max(lastPops$logpop, na.rm = TRUE)
+        
+        for (currentSystem in unique(lastPops$system)){
+            currentPops <- lastPops %>%
+                filter(system == currentSystem)
+            
+            meanLog <- mean(currentPops$logpop, na.rm = TRUE)
+            sdLog <- sd(currentPops$logpop,na.rm = TRUE)
+            
+            myCurve <- data.frame(system = currentSystem,
+                                  as.data.frame(curve(expr = myLogNorm(x, meanLog, sdLog),
+                                                      xlim=c(minX,maxX))),
+                                  stringsAsFactors = FALSE)
+            xyDF <- xyDF %>%
+                bind_rows(myCurve)
+        }
+        
+        labels <-  c(10000,1E5, 1E6, 10E6)
+        breaks <- log(labels)
+        
+        ggplot() +
+            geom_histogram(data=lastPops, aes(x=logpop, y=..density..), colour = "black",  alpha =  0.2,  fill = "firebrick1") +
+            geom_density(data=lastPops,  aes(x=logpop, y=..density..), colour = "firebrick1", size=1, linetype = "twodash") +
+            geom_line(data=xyDF, aes(x = x, y = y), colour="cornflowerblue", size=1.5) +
+            scale_x_continuous(breaks=breaks, labels=labels) +
+            facet_wrap(~ system, scales = "fixed", ncol = 7) +
+            ggtitle("Populations histograms") +
+            theme_bw() +
+            theme(strip.text = element_text(size=14)) +
+            xlab("Population (last census)")
+    })
+    
+    output$qqplotsComparison <- renderPlot({
+        maxyear <- BRICS %>%
+            group_by(system) %>%
+            summarise(yearmax = max(year))
+        
+        lastPops <- BRICS %>%
+            semi_join(maxyear, by= c("system",  "year" = "yearmax"))
+        
+        lastPops$logpop <- log(lastPops$pop)
+        
+        myLogNorm <- function(x, mean, sd){ dnorm(x, mean = mean, sd = sd)}
+        
+        xyDF<- data.frame(system = character(), x=numeric(), y=numeric(), stringsAsFactors=FALSE) 
+        
+        minX <- min(lastPops$logpop, na.rm = TRUE)
+        maxX <- max(lastPops$logpop, na.rm = TRUE)
+        
+        for (currentSystem in unique(lastPops$system)){
+            currentPops <- lastPops %>%
+                filter(system == currentSystem)
+            
+            meanLog <- mean(currentPops$logpop, na.rm = TRUE)
+            sdLog <- sd(currentPops$logpop,na.rm = TRUE)
+            
+            myCurve <- data.frame(system = currentSystem,
+                                  as.data.frame(curve(expr = myLogNorm(x, meanLog, sdLog),
+                                                      xlim=c(minX,maxX))),
+                                  stringsAsFactors = FALSE)
+            xyDF <- xyDF %>%
+                bind_rows(myCurve)
+        }
+        
+        labels <-  c(10000,1E5, 1E6, 10E6)
+        breaks <- log(labels)
+        
+        ggplot() +
+            geom_histogram(data=lastPops, aes(x=logpop, y=..density..), colour = "black",  alpha =  0.2,  fill = "firebrick1") +
+            geom_density(data=lastPops,  aes(x=logpop, y=..density..), colour = "firebrick1", size=1, linetype = "twodash") +
+            geom_line(data=xyDF, aes(x = x, y = y), colour="cornflowerblue", size=1.5) +
+            scale_x_continuous(breaks=breaks, labels=labels) +
+            facet_wrap(~ system, scales = "fixed", ncol = 7) +
+            ggtitle("Populations histograms") +
+            theme_bw() +
+            theme(strip.text = element_text(size=14)) +
+            xlab("Population (last census)")
+    })
+    
     updateInputs <- function(session, columns, realColumns){        
         updateSelectInput(session=session, inputId="timeColumnSelected",
                           choices=realColumns, selected=realColumns)
@@ -687,46 +781,6 @@ shinyServer(function(input, output, session) {
         updateSelectInput(session=session, inputId="dateLogNormal", choices=NA, selected="")
         updateSelectInput(session=session, inputId="dateInitial", choices=NA, selected="")
         updateSelectInput(session=session, inputId="dateFinal", choices = NA, selected="")
-    }
-    
-    
-    
-    
-    getXmin3 <- function(o, g = 10E3, c = 10, k = 5, xmax = 1E6){
-        est = list()
-        x = o$x
-        N = o$nx
-        g = g - (g * (100 - c)/100)
-        xmins = o$ux[o$ux <= xmax]
-        START = xmins[which.min(abs(xmins - g))]
-        if (START > g) {
-            START = xmins[which.min(abs(xmins - g))]
-        }
-        if (length(START) == 0) {
-            START = 1
-        }
-        xmins = xmins[which(xmins == START):length(xmins)]
-        L = length(xmins)
-        KS = numeric()
-        alpha = numeric()
-        xu = sort(x)
-        len_xu = length(xu)
-        for (i in 1:L) {
-            n = length(xu[xu >= xmins[i]])
-            q = xu[(N - n + 1):len_xu]
-            q = q[q <= xmax]
-            S = pmf(q)$y
-            alpha = c(alpha, 1 + length(q)/sum(log(q/(xmins[i] - 
-                                                          0.5))))
-            P = ddispl(unique(q), xmin = xmins[i], alpha = alpha[i])
-            KS = c(KS, max(abs(P - S)))
-        }
-        est$xmin = xmins[which.min(KS)]
-        est$alpha = alpha[which.min(KS)]
-        o$xmin = xmins[which.min(KS)]
-        o$alpha = alpha[which.min(KS)]
-        o$sigma = (alpha[which.min(KS)] - 1)/sqrt(N)
-        return(est)
     }
     
 })

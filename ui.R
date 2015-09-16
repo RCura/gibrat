@@ -100,7 +100,13 @@ shinyUI(
                         )    
                ),
                tabPanel("System comparison",
-                        HTML("<h2>Here be <s>dragons</s> <i>tabs</i> & <i>plots</i></h2>")
+                        HTML("<h2>Here be <s>dragons</s> <i>tabs</i> & <i>plots</i></h2>"),
+                        tabsetPanel(
+                            tabPanel("Shape comparison",
+                                     fluidRow(plotOutput("shapeComparison")),
+                                     fluidRow(plotOutput('qqplotsComparison'))
+                                     )
+                        )
                         )
                
     )

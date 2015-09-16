@@ -202,3 +202,171 @@ reps <- 1
     dimnames(simArray) <- list(rownames(df), (firstDate:lastDate) , paste("Sim", 1:reps, sep=""))
 View(simArray[,,1])
      
+
+
+#####  SYSTEM COMPARISON  #####
+
+library(tidyr)
+library(dplyr)
+
+Brazil$system <- "Brazil"
+China$system <- "China"
+France$system <- "France"
+India$system <- "India"
+Russia$system <- "FSU"
+SouthAfrica$system <- "South Africa"
+USA$system <- "USA"
+
+BrazilLong <- Brazil %>%
+    select(ID, Name, Lat, Long, system,`1960`:`2010`) %>%
+    gather(year, pop,  `1960`:`2010`) %>%
+    mutate(year=as.integer(as.character(year)))
+glimpse(BrazilLong)
+
+ChinaLong <- China %>%
+    select(ID, Name, Lat, Long, system,  `1964`:`2010`) %>%
+    gather(year, pop,  `1964`:`2010`) %>%
+    mutate(year=as.integer(as.character(year)))
+glimpse(ChinaLong)
+
+FranceLong <- France %>%
+    select(ID, Name, Lat, Long, system, `1962`:`1999`) %>%
+    gather(year, pop,  `1962`:`1999`) %>%
+    mutate(year=as.integer(as.character(year)))
+glimpse(FranceLong)
+
+IndiaLong <- India %>%
+    select(ID, Name, Lat, Long, system, `1961`:`2011`) %>%
+    gather(year, pop,  `1961`:`2011`) %>%
+    mutate(year=as.integer(as.character(year)))
+glimpse(IndiaLong)
+
+FSULong <- Russia %>%
+    select(ID, Name, Lat, Long, system, `1959`:`2010`) %>%
+    gather(year, pop,  `1959`:`2010`) %>%
+    mutate(year=as.integer(as.character(year)))
+glimpse(FSULong)
+
+SouthAfricaLong <- SouthAfrica %>%
+    select(ID, Name, Lat, Long, system, `1960`:`2001`) %>%
+    gather(year, pop,  `1960`:`2001`) %>%
+    mutate(year=as.integer(as.character(year)))
+glimpse(SouthAfricaLong)
+
+USALong <- USA %>%
+    select(ID, Name, Lat, Long, system, `1960`:`2010`) %>%
+    gather(year, pop,  `1960`:`2010`) %>%
+    mutate(year=as.integer(as.character(year)))
+glimpse(USALong)
+
+BRICS <- BrazilLong %>%
+    bind_rows(ChinaLong) %>%
+    bind_rows(FranceLong) %>%
+    bind_rows(IndiaLong) %>%
+    bind_rows(FSULong) %>%
+    bind_rows(SouthAfricaLong)%>%
+    bind_rows(USALong)
+View(BRICS)
+ rm(list= c("BrazilLong", "ChinaLong", "FranceLong", "FSULong", "IndiaLong", "SouthAfricaLong", "USALong"))
+ 
+ 
+ maxyear <- BRICS %>%
+     group_by(system) %>%
+     summarise(yearmax = max(year))
+ 
+ lastPops <- BRICS %>%
+     semi_join(maxyear, by= c("system",  "year" = "yearmax"))
+     
+par(mfrow = c(3,3), mar=c(1,1,1,1))
+for (currentSystem in unique(lastPops$system)){
+    currentPops <- lastPops[lastPops$system == currentSystem & lastPops$pop > 10E3 & !is.na(lastPops$pop),"pop"][[1]]
+    
+    skewedPops <- currentPops - 10E3
+    logSkewedPops <-  log(skewedPops)
+    meanLog <- mean(logSkewedPops)
+    sdLog <- sd(logSkewedPops)
+    labels <-  c(10000,15E3,25E3,50E3,100E3, 1E6, 10E6, 20E6)
+    ticks <- log(labels - 10E3)
+    hist(logSkewedPops, breaks = 50, prob = TRUE, xaxt  ="n",
+         main =  sprintf("Populations of %s \n(cut at Χ₀ =  10E3)", currentSystem),
+         xlab="Population (log-scale)", ylab="Density")
+    axis(side = 1, at=ticks, labels=labels, las=1)
+    #text(cex=.8, x=ticks, y=-0.02, labels, xpd=TRUE, srt=45, pos=1)
+    lines(dnorm(x = seq(from=0, to=1/2*max(logSkewedPops), by=0.5), mean = meanLog, sd = sdLog), type = "l", col = "blue", lwd = 2)
+#     qqnorm(y = logSkewedPops, xaxt= "n", yaxt  = "n",
+#            type="p", pch=19, cex=1,
+#            col=rgb(0, 0, 1, 0.1))
+#     qqline(logSkewedPops)
+#     axis(side = 1, at=ticks, labels=labels, las=1, cex.axis=0.6)
+#     axis(side = 2, at=ticks, labels=labels, las=1, cex.axis=0.6)
+    
+} 
+par(mfrow=c(1,1))
+
+load("~/repositories/gibrat/data/countriesPop.RData")
+
+maxyear <- BRICS %>%
+    group_by(system) %>%
+    summarise(yearmax = max(year))
+
+lastPops <- BRICS %>%
+    semi_join(maxyear, by= c("system",  "year" = "yearmax"))
+
+popsBrazil <- lastPops %>%
+    filter(system == "Brazil") %>%
+    mutate(logpop = log(pop))
+    
+
+meanLog <- mean(popsBrazil$logpop)
+sdLog <- sd(popsBrazil$logpop)
+
+ggplot(data=popsBrazil, aes(x=pop)) + geom_histogram(aes(y = ..density..)) +
+    stat_function(fun = dlnorm,  args = list(meanlog = meanLog, sdlog = sdLog), size=1, color='blue') +
+    scale_x_log10() +
+    theme_bw()
+
+
+
+
+library(ggplot2)
+
+maxyear <- BRICS %>%
+    group_by(system) %>%
+    summarise(yearmax = max(year))
+
+lastPops <- BRICS %>%
+    semi_join(maxyear, by= c("system",  "year" = "yearmax"))
+
+lastPops$logpop <- log(lastPops$pop)
+
+xyDF <- data.frame(system = character(), x=numeric(), y=numeric(), stringsAsFactors=FALSE) 
+
+for (currentSystem in unique(lastPops$system)){
+    currentPops <- lastPops %>%
+        filter(system == currentSystem) %>%
+        filter(logpop > 0, !is.na(logpop))
+
+    qqDiff <- data.frame(system = currentSystem,
+                          as.data.frame(qqnorm(y = currentPops$logpop,  plot.it = FALSE)),
+                          stringsAsFactors = FALSE)
+    xyDF <- xyDF %>%
+        bind_rows(qqDiff)
+}
+
+labels <-  c(10000,1E5,1E6,10E6)
+breaks <- log(labels)
+
+library(ggplot2)
+ggplot(data = xyDF, aes(x=x, y=y)) +
+    geom_point(colour = "black",  alpha =  0.2,  fill = "firebrick1") +
+    scale_x_continuous(breaks=breaks, labels=labels) +
+    scale_y_continuous(breaks=breaks, labels=labels) +
+    facet_wrap(~system)
+    geom_density(data=lastPops,  aes(x=logpop, y=..density..), colour = "firebrick1", size=1, linetype = "twodash") +
+    geom_line(data=xyDF, aes(x = x, y = y), colour="cornflowerblue", size=1.5) +
+    scale_x_continuous(breaks=breaks, labels=labels) +
+    facet_wrap(~ system, scales = "fixed", ncol = 7) +
+    ggtitle("Populations histograms") +
+    theme_bw() +
+    theme(strip.text = element_text(size=14)) +
+    xlab("Population (last census)")
