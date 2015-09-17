@@ -204,7 +204,7 @@ View(simArray[,,1])
      
 
 
-#####  SYSTEM COMPARISON  #####
+#####  SYSTEM DB BUILDING  #####
 
 library(tidyr)
 library(dplyr)
@@ -269,85 +269,26 @@ BRICS <- BrazilLong %>%
 View(BRICS)
  rm(list= c("BrazilLong", "ChinaLong", "FranceLong", "FSULong", "IndiaLong", "SouthAfricaLong", "USALong"))
  
- 
- maxyear <- BRICS %>%
-     group_by(system) %>%
-     summarise(yearmax = max(year))
- 
- lastPops <- BRICS %>%
-     semi_join(maxyear, by= c("system",  "year" = "yearmax"))
-     
-par(mfrow = c(3,3), mar=c(1,1,1,1))
-for (currentSystem in unique(lastPops$system)){
-    currentPops <- lastPops[lastPops$system == currentSystem & lastPops$pop > 10E3 & !is.na(lastPops$pop),"pop"][[1]]
-    
-    skewedPops <- currentPops - 10E3
-    logSkewedPops <-  log(skewedPops)
-    meanLog <- mean(logSkewedPops)
-    sdLog <- sd(logSkewedPops)
-    labels <-  c(10000,15E3,25E3,50E3,100E3, 1E6, 10E6, 20E6)
-    ticks <- log(labels - 10E3)
-    hist(logSkewedPops, breaks = 50, prob = TRUE, xaxt  ="n",
-         main =  sprintf("Populations of %s \n(cut at Χ₀ =  10E3)", currentSystem),
-         xlab="Population (log-scale)", ylab="Density")
-    axis(side = 1, at=ticks, labels=labels, las=1)
-    #text(cex=.8, x=ticks, y=-0.02, labels, xpd=TRUE, srt=45, pos=1)
-    lines(dnorm(x = seq(from=0, to=1/2*max(logSkewedPops), by=0.5), mean = meanLog, sd = sdLog), type = "l", col = "blue", lwd = 2)
-#     qqnorm(y = logSkewedPops, xaxt= "n", yaxt  = "n",
-#            type="p", pch=19, cex=1,
-#            col=rgb(0, 0, 1, 0.1))
-#     qqline(logSkewedPops)
-#     axis(side = 1, at=ticks, labels=labels, las=1, cex.axis=0.6)
-#     axis(side = 2, at=ticks, labels=labels, las=1, cex.axis=0.6)
-    
-} 
-par(mfrow=c(1,1))
-
-load("~/repositories/gibrat/data/countriesPop.RData")
+ #####  SYSTEM COMPARISON  #####
 
 maxyear <- BRICS %>%
     group_by(system) %>%
     summarise(yearmax = max(year))
 
 lastPops <- BRICS %>%
-    semi_join(maxyear, by= c("system",  "year" = "yearmax"))
-
-popsBrazil <- lastPops %>%
-    filter(system == "Brazil") %>%
-    mutate(logpop = log(pop))
-    
-
-meanLog <- mean(popsBrazil$logpop)
-sdLog <- sd(popsBrazil$logpop)
-
-ggplot(data=popsBrazil, aes(x=pop)) + geom_histogram(aes(y = ..density..)) +
-    stat_function(fun = dlnorm,  args = list(meanlog = meanLog, sdlog = sdLog), size=1, color='blue') +
-    scale_x_log10() +
-    theme_bw()
-
-
-
-
-library(ggplot2)
-
-maxyear <- BRICS %>%
-    group_by(system) %>%
-    summarise(yearmax = max(year))
-
-lastPops <- BRICS %>%
-    semi_join(maxyear, by= c("system",  "year" = "yearmax"))
-
-lastPops$logpop <- log(lastPops$pop)
+    semi_join(maxyear, by= c("system",  "year" = "yearmax")) %>%
+    filter(pop > 10E3, !is.na(pop)) %>%
+    mutate(logpop = log(pop)) %>%
+    mutate(sklogpop = log(pop - 10E3))
 
 xyDF <- data.frame(system = character(), x=numeric(), y=numeric(), stringsAsFactors=FALSE) 
 
 for (currentSystem in unique(lastPops$system)){
     currentPops <- lastPops %>%
-        filter(system == currentSystem) %>%
-        filter(logpop > 0, !is.na(logpop))
+        filter(system == currentSystem)
 
     qqDiff <- data.frame(system = currentSystem,
-                          as.data.frame(qqnorm(y = currentPops$logpop,  plot.it = FALSE)),
+                          as.data.frame(qqnorm(y = currentPops$sklogpop,  plot.it = FALSE)),
                           stringsAsFactors = FALSE)
     xyDF <- xyDF %>%
         bind_rows(qqDiff)
@@ -356,13 +297,29 @@ for (currentSystem in unique(lastPops$system)){
 labels <-  c(10000,1E5,1E6,10E6)
 breaks <- log(labels)
 
-library(ggplot2)
 ggplot(data = xyDF, aes(x=x, y=y)) +
+    geom_smooth(method="lm", level=0.5, size=1.5, colour="cornflowerblue") +
     geom_point(colour = "black",  alpha =  0.2,  fill = "firebrick1") +
     scale_x_continuous(breaks=breaks, labels=labels) +
     scale_y_continuous(breaks=breaks, labels=labels) +
-    facet_wrap(~system)
-    geom_density(data=lastPops,  aes(x=logpop, y=..density..), colour = "firebrick1", size=1, linetype = "twodash") +
+    facet_wrap(~system, scales = "fixed", ncol = 7) + 
+    ggtitle("Normal Q-Q plot\n(log(Populations) cut at 10E3)") +
+    theme_bw() +
+    theme(strip.text = element_text(size=14)) +
+    xlab("Theoretical Population") +
+    ylab("Observed Population")
+
+lastSA <- SouthAfrica$`2001`
+
+    qqnorm(y = log(lastSA), xaxt= "n", yaxt  = "n",
+           type="p", pch=19, cex=1,
+           col=rgb(0, 0, 1, 0.1))
+    qqline(log(lastSA))
+    axis(side = 1, at=log(labels), labels=labels, las=1, cex.axis=0.6)
+    axis(side = 2, at=log(labels), labels=labels, las=1, cex.axis=0.6)
+    
+
+geom_density(data=lastPops,  aes(x=logpop, y=..density..), colour = "firebrick1", size=1, linetype = "twodash") +
     geom_line(data=xyDF, aes(x = x, y = y), colour="cornflowerblue", size=1.5) +
     scale_x_continuous(breaks=breaks, labels=labels) +
     facet_wrap(~ system, scales = "fixed", ncol = 7) +
@@ -370,3 +327,104 @@ ggplot(data = xyDF, aes(x=x, y=y)) +
     theme_bw() +
     theme(strip.text = element_text(size=14)) +
     xlab("Population (last census)")
+
+
+
+
+    maxyear <- BRICS %>%
+        group_by(system) %>%
+        summarise(yearmax = max(year))
+    
+    lastPops <- BRICS %>%
+        semi_join(maxyear, by= c("system",  "year" = "yearmax")) %>%
+        filter(pop > 10E3, !is.na(pop)) %>%
+        mutate(logpop = log(pop)) %>%
+        mutate(sklogpop = log(pop - 10E3))
+    
+    myLogNorm <- function(x, mean, sd){ dnorm(x, mean = mean, sd = sd)}
+    
+    minX <- min(lastPops$sklogpop)
+    maxX <- max(lastPops$sklogpop)
+    
+    xyDF <- data.frame(system = character(), x=numeric(), y=numeric(), stringsAsFactors=FALSE) 
+    
+    for (currentSystem in unique(lastPops$system)){
+        currentPops <- lastPops %>%
+            filter(system == currentSystem)
+        
+        meanLog <- mean(currentPops$sklogpop, na.rm = TRUE)
+        sdLog <- sd(currentPops$sklogpop,na.rm = TRUE)
+        
+        myCurve <- data.frame(system = currentSystem,
+                              as.data.frame(curve(expr = myLogNorm(x, meanLog, sdLog),
+                                                  xlim=c(minX,maxX))),
+                              stringsAsFactors = FALSE)
+        xyDF <- xyDF %>%
+            bind_rows(myCurve)
+    }
+    
+    labels <-  c(10000,1E5, 1E6, 10E6)
+    breaks <- log(labels - (10E3) + 1)
+    
+    
+    maxyear <- BRICS %>%
+        group_by(system) %>%
+        summarise(yearmax = max(year))
+    
+    lastPops <- BRICS %>%
+        semi_join(maxyear, by= c("system",  "year" = "yearmax")) %>%
+        filter(pop > 10E3, !is.na(pop)) %>%
+        mutate(logpop = log(pop)) %>%
+        mutate(sklogpop = log(pop - 10E3))
+    
+    resultDF <- data.frame(matrix(0, nrow = 6, ncol = length(unique(lastPops$system))), stringsAsFactors = FALSE)
+    colnames(resultDF) <- unique(lastPops$system)
+    row.names(resultDF) <- c("Year", "Nb Cities", "meanLog",  "sdLog", "p.value (Shapiro-Wilk)", "p.value (Kolmogorov-Smirnoff)")
+    for (currentSystem in unique(lastPops$system)){
+        currentPops <- lastPops %>%
+            filter(system == currentSystem)
+        
+        year <- as.numeric(unique(currentPops$year))
+        nbCities <- nrow(currentPops)
+        meanLog <- mean(currentPops$sklogpop)
+        sdLog <- sd(currentPops$sklogpop)
+        
+        if (nbCities > 5000){
+            SW.data <- sample(x = currentPops$sklogpop, size = 5000)
+        } else {
+            SW.data <-  currentPops$sklogpop
+        }
+        SW.pvalue <- shapiro.test(SW.data)$p.value
+        KStest <- ks.test(logSkewedPops, "pnorm")
+        KS.pvalue <- KStest$p.value
+        resultDF[,currentSystem] <- c(year, nbCities, meanLog, sdLog, SW.pvalue,  KS.pvalue)
+    }
+    
+    resultDF
+    
+    basePops <- pops$datepop[pops$datepop > 10E3]
+    skewedPops <- basePops - 10E3
+    logSkewedPops <-  log(skewedPops)
+    meanLog <- mean(logSkewedPops)
+    sdLog <- sd(logSkewedPops)
+    if (length(logSkewedPops) > 5000){
+        testData <- sample(x = logSkewedPops, size = 5000)
+    } else {
+        testData <-  logSkewedPops
+    }
+    resultDF <- data.frame(method = "Shapiro-Wilk (Χ₀ =  10E3)",
+                           nbCities = length(testData),
+                           meanLog = meanLog,
+                           sdLog = sdLog,
+                           p.value = shapiro.test(testData)$p.value,
+                           stringsAsFactors = FALSE, check.names = FALSE)
+    # See here : http://abcdr.guyader.pro/676-comment-faire-un-test-de-normalite-avec-r-le-test-de-shapiro-wilk/
+    KStest <- ks.test(logSkewedPops, "pnorm")
+    resultDF[2,] <- c("Kolmogorov-Smirnoff (Χ₀ =  10E3)",
+                      length(logSkewedPops),
+                      meanLog,
+                      sdLog,
+                      KStest$p.value
+    )
+    resultDF
+ 

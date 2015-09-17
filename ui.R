@@ -100,12 +100,18 @@ shinyUI(
                         )    
                ),
                tabPanel("System comparison",
-                        HTML("<h2>Here be <s>dragons</s> <i>tabs</i> & <i>plots</i></h2>"),
                         tabsetPanel(
-                            tabPanel("Shape comparison",
+                            tabPanel("LogNormality",
                                      fluidRow(plotOutput("shapeComparison")),
-                                     fluidRow(plotOutput('qqplotsComparison'))
-                                     )
+                                     fluidRow(plotOutput('qqplotsComparison')),
+                                     fluidRow(tableOutput('normalityComparison'))
+                                     ),
+                            tabPanel("Zipf curves",
+                                     fluidRow(plotOutput("sysZipfEvolution")),
+                                     fluidRow(plotOutput("sysZipfLast"))),
+                            tabPanel("Databases completeness",
+                                     fluidRow(tableOutput('numCitiesAppeared')),
+                                     fluidRow(tableOutput('popCitiesAppeared')))
                         )
                         )
                

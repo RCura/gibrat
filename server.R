@@ -639,25 +639,27 @@ shinyServer(function(input, output, session) {
             summarise(yearmax = max(year))
         
         lastPops <- BRICS %>%
-            semi_join(maxyear, by= c("system",  "year" = "yearmax"))
-        
-        lastPops$logpop <- log(lastPops$pop)
+            semi_join(maxyear, by= c("system",  "year" = "yearmax")) %>%
+            filter(pop > 10E3, !is.na(pop)) %>%
+            mutate(logpop = log(pop)) %>%
+            mutate(sklogpop = log(pop - 10E3))
+        lastPops$sysYear <- paste(lastPops$system, "\n(",  lastPops$year, ")", sep="")
         
         myLogNorm <- function(x, mean, sd){ dnorm(x, mean = mean, sd = sd)}
         
-        xyDF<- data.frame(system = character(), x=numeric(), y=numeric(), stringsAsFactors=FALSE) 
+        minX <- min(lastPops$sklogpop)
+        maxX <- max(lastPops$sklogpop)
         
-        minX <- min(lastPops$logpop, na.rm = TRUE)
-        maxX <- max(lastPops$logpop, na.rm = TRUE)
+        xyDF <- data.frame(system = character(), x=numeric(), y=numeric(), stringsAsFactors=FALSE) 
         
-        for (currentSystem in unique(lastPops$system)){
+        for (currentSysYear in unique(lastPops$sysYear)){
             currentPops <- lastPops %>%
-                filter(system == currentSystem)
+                filter(sysYear == currentSysYear)
             
-            meanLog <- mean(currentPops$logpop, na.rm = TRUE)
-            sdLog <- sd(currentPops$logpop,na.rm = TRUE)
+            meanLog <- mean(currentPops$sklogpop, na.rm = TRUE)
+            sdLog <- sd(currentPops$sklogpop,na.rm = TRUE)
             
-            myCurve <- data.frame(system = currentSystem,
+            myCurve <- data.frame(sysYear = currentSysYear,
                                   as.data.frame(curve(expr = myLogNorm(x, meanLog, sdLog),
                                                       xlim=c(minX,maxX))),
                                   stringsAsFactors = FALSE)
@@ -666,15 +668,15 @@ shinyServer(function(input, output, session) {
         }
         
         labels <-  c(10000,1E5, 1E6, 10E6)
-        breaks <- log(labels)
+        breaks <- log(labels - (10E3) + 1)
         
         ggplot() +
-            geom_histogram(data=lastPops, aes(x=logpop, y=..density..), colour = "black",  alpha =  0.2,  fill = "firebrick1") +
-            geom_density(data=lastPops,  aes(x=logpop, y=..density..), colour = "firebrick1", size=1, linetype = "twodash") +
+            geom_histogram(data=lastPops, aes(x=sklogpop, y=..density..), colour = "black",  alpha =  0.2,  binwidth = 0.75,fill = "firebrick1") +
+            geom_density(data=lastPops,  aes(x=sklogpop, y=..density..), colour = "firebrick1", size=1, linetype = "twodash") +
             geom_line(data=xyDF, aes(x = x, y = y), colour="cornflowerblue", size=1.5) +
             scale_x_continuous(breaks=breaks, labels=labels) +
-            facet_wrap(~ system, scales = "fixed", ncol = 7) +
-            ggtitle("Populations histograms") +
+            facet_wrap(~ sysYear, scales = "fixed", ncol = 7) +
+            ggtitle("log(Populations) histograms\n((Χ₀ =  10E3))") +
             theme_bw() +
             theme(strip.text = element_text(size=14)) +
             xlab("Population (last census)")
@@ -686,47 +688,77 @@ shinyServer(function(input, output, session) {
             summarise(yearmax = max(year))
         
         lastPops <- BRICS %>%
-            semi_join(maxyear, by= c("system",  "year" = "yearmax"))
+            semi_join(maxyear, by= c("system",  "year" = "yearmax")) %>%
+            filter(pop > 10E3, !is.na(pop)) %>%
+            mutate(logpop = log(pop)) %>%
+            mutate(sklogpop = log(pop - 10E3))
+        lastPops$sysYear <- paste(lastPops$system, "\n(",  lastPops$year, ")", sep="")
         
-        lastPops$logpop <- log(lastPops$pop)
+        xyDF <- data.frame(system = character(), x=numeric(), y=numeric(), stringsAsFactors=FALSE) 
         
-        myLogNorm <- function(x, mean, sd){ dnorm(x, mean = mean, sd = sd)}
+        for (currentSysYear in unique(lastPops$sysYear)){
+            currentPops <- lastPops %>%
+                filter(sysYear == currentSysYear)
+            
+            qqDiff <- data.frame(sysYear = currentSysYear,
+                                 as.data.frame(qqnorm(y = currentPops$sklogpop,  plot.it = FALSE)),
+                                 stringsAsFactors = FALSE)
+            xyDF <- xyDF %>%
+                bind_rows(qqDiff)
+        }
         
-        xyDF<- data.frame(system = character(), x=numeric(), y=numeric(), stringsAsFactors=FALSE) 
+        labels <-  c(10000,1E5,1E6,10E6)
+        breaks <- log(labels)
         
-        minX <- min(lastPops$logpop, na.rm = TRUE)
-        maxX <- max(lastPops$logpop, na.rm = TRUE)
+        ggplot(data = xyDF, aes(x=x, y=y)) +
+            geom_smooth(method="lm", level=0.5, size=1.5, colour="cornflowerblue") +
+            geom_point(colour = "black",  alpha =  0.2,  fill = "firebrick1") +
+            scale_x_continuous(breaks=breaks, labels=labels) +
+            scale_y_continuous(breaks=breaks, labels=labels) +
+            facet_wrap(~sysYear, scales = "fixed", ncol = 7) + 
+            ggtitle("Normal Q-Q plot\n(log(Populations (Χ₀ =  10E3)))") +
+            theme_bw() +
+            theme(strip.text = element_text(size=14)) +
+            xlab("Theoretical Population") +
+            ylab("Observed Population")
+    })
+    
+    output$normalityComparison <- renderTable({
+        maxyear <- BRICS %>%
+            group_by(system) %>%
+            summarise(yearmax = max(year))
         
+        lastPops <- BRICS %>%
+            semi_join(maxyear, by= c("system",  "year" = "yearmax")) %>%
+            filter(pop > 10E3, !is.na(pop)) %>%
+            mutate(logpop = log(pop)) %>%
+            mutate(sklogpop = log(pop - 10E3))
+        
+        resultDF <- data.frame(matrix(0, nrow = 6, ncol = length(unique(lastPops$system))), stringsAsFactors = FALSE)
+        colnames(resultDF) <- unique(lastPops$system)
+        row.names(resultDF) <- c("Year", "Nb Cities", "meanLog",  "sdLog", "p.value (Shapiro-Wilk)", "p.value (Kolmogorov-Smirnoff)")
         for (currentSystem in unique(lastPops$system)){
             currentPops <- lastPops %>%
                 filter(system == currentSystem)
             
-            meanLog <- mean(currentPops$logpop, na.rm = TRUE)
-            sdLog <- sd(currentPops$logpop,na.rm = TRUE)
+            year <- as.numeric(unique(currentPops$year))
+            nbCities <- nrow(currentPops)
+            meanLog <- mean(currentPops$sklogpop)
+            sdLog <- sd(currentPops$sklogpop)
             
-            myCurve <- data.frame(system = currentSystem,
-                                  as.data.frame(curve(expr = myLogNorm(x, meanLog, sdLog),
-                                                      xlim=c(minX,maxX))),
-                                  stringsAsFactors = FALSE)
-            xyDF <- xyDF %>%
-                bind_rows(myCurve)
+            if (nbCities > 5000){
+                SW.data <- sample(x = currentPops$sklogpop, size = 5000)
+            } else {
+                SW.data <-  currentPops$sklogpop
+            }
+            SW.pvalue <- shapiro.test(SW.data)$p.value
+            KStest <- ks.test(currentPops$sklogpop, "pnorm", )
+            KS.pvalue <- KStest$p.value
+            resultDF[,currentSystem] <- c(year, nbCities, meanLog, sdLog, SW.pvalue,  KS.pvalue)
         }
-        
-        labels <-  c(10000,1E5, 1E6, 10E6)
-        breaks <- log(labels)
-        
-        ggplot() +
-            geom_histogram(data=lastPops, aes(x=logpop, y=..density..), colour = "black",  alpha =  0.2,  fill = "firebrick1") +
-            geom_density(data=lastPops,  aes(x=logpop, y=..density..), colour = "firebrick1", size=1, linetype = "twodash") +
-            geom_line(data=xyDF, aes(x = x, y = y), colour="cornflowerblue", size=1.5) +
-            scale_x_continuous(breaks=breaks, labels=labels) +
-            facet_wrap(~ system, scales = "fixed", ncol = 7) +
-            ggtitle("Populations histograms") +
-            theme_bw() +
-            theme(strip.text = element_text(size=14)) +
-            xlab("Population (last census)")
-    })
     
+        resultDF
+    })
     updateInputs <- function(session, columns, realColumns){        
         updateSelectInput(session=session, inputId="timeColumnSelected",
                           choices=realColumns, selected=realColumns)
