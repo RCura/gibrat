@@ -752,7 +752,7 @@ shinyServer(function(input, output, session) {
                 SW.data <-  currentPops$sklogpop
             }
             SW.pvalue <- shapiro.test(SW.data)$p.value
-            KStest <- ks.test(currentPops$sklogpop, "pnorm", )
+            KStest <- ks.test(currentPops$sklogpop, "pnorm" )
             KS.pvalue <- KStest$p.value
             resultDF[,currentSystem] <- c(year, nbCities, meanLog, sdLog, SW.pvalue,  KS.pvalue)
         }

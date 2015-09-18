@@ -366,6 +366,8 @@ geom_density(data=lastPops,  aes(x=logpop, y=..density..), colour = "firebrick1"
     labels <-  c(10000,1E5, 1E6, 10E6)
     breaks <- log(labels - (10E3) + 1)
     
+    library(dplyr)
+    library(ggplot2)
     
     maxyear <- BRICS %>%
         group_by(system) %>%
@@ -395,36 +397,14 @@ geom_density(data=lastPops,  aes(x=logpop, y=..density..), colour = "firebrick1"
             SW.data <-  currentPops$sklogpop
         }
         SW.pvalue <- shapiro.test(SW.data)$p.value
-        KStest <- ks.test(logSkewedPops, "pnorm")
+        KStest <- ks.test(currentPops$sklogpop, rnorm(5000, mean = meanLog, sd = sdLog))
         KS.pvalue <- KStest$p.value
         resultDF[,currentSystem] <- c(year, nbCities, meanLog, sdLog, SW.pvalue,  KS.pvalue)
     }
     
     resultDF
+    blob <- ks.test(currentPops$sklogpop, "pnorm")
     
-    basePops <- pops$datepop[pops$datepop > 10E3]
-    skewedPops <- basePops - 10E3
-    logSkewedPops <-  log(skewedPops)
-    meanLog <- mean(logSkewedPops)
-    sdLog <- sd(logSkewedPops)
-    if (length(logSkewedPops) > 5000){
-        testData <- sample(x = logSkewedPops, size = 5000)
-    } else {
-        testData <-  logSkewedPops
-    }
-    resultDF <- data.frame(method = "Shapiro-Wilk (Χ₀ =  10E3)",
-                           nbCities = length(testData),
-                           meanLog = meanLog,
-                           sdLog = sdLog,
-                           p.value = shapiro.test(testData)$p.value,
-                           stringsAsFactors = FALSE, check.names = FALSE)
-    # See here : http://abcdr.guyader.pro/676-comment-faire-un-test-de-normalite-avec-r-le-test-de-shapiro-wilk/
-    KStest <- ks.test(logSkewedPops, "pnorm")
-    resultDF[2,] <- c("Kolmogorov-Smirnoff (Χ₀ =  10E3)",
-                      length(logSkewedPops),
-                      meanLog,
-                      sdLog,
-                      KStest$p.value
-    )
-    resultDF
- 
+    ks.test(sort(as.numeric(currentPops$sklogpop)), "pnorm")
+    shapiro.test(sort(as.numeric(currentPops$sklogpop)))
+    
