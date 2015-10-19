@@ -566,40 +566,6 @@ shinyServer(function(input, output, session) {
         relMatrix <-  trMatrix  / rowSums(trMatrix) * 100
     })  
     
-    output$correlations <- renderTable({
-        obs <- dataValues$calcDF
-        reducedSim <- computedValues$simMeans[,colnames(obs)]
-        myCors <- as.vector(unlist(lapply(X=colnames(obs), FUN=function(x){
-            cor(sort(obs[,x]), y=sort(reducedSim[,x]))
-        })))
-        
-        myLogCors <- as.vector(unlist(lapply(X=colnames(obs), FUN=function(x){
-            cor(sort(log(obs[,x])), y=sort(log(reducedSim[,x])))
-        })))
-        
-        myObsSD <- as.vector(unlist(apply(X=obs, MARGIN=2, FUN=sd)))
-        mySimSD <- as.vector(unlist(apply(X=reducedSim, MARGIN=2, FUN=sd)))
-        myObsMean <- as.vector(unlist(apply(X=obs, MARGIN=2, FUN=mean)))
-        mySimMean <- as.vector(unlist(apply(X=reducedSim, MARGIN=2, FUN=mean)))
-        myObsSum <-  as.vector(unlist(apply(X=obs, MARGIN=2, FUN=sum)))
-        mySimSum <-  as.vector(unlist(apply(X=reducedSim, MARGIN=2, FUN=sum)))
-        
-        corTable <- data.frame(row.names=colnames(obs),
-                               Corr=myCors,
-                               LogCorr=myLogCors,
-                               ObsSum=myObsSum,
-                               SimSum=mySimSum,
-                               ObsMean=myObsMean,
-                               SimMean=mySimMean, 
-                               ObsSD=myObsSD,
-                               SimSD=mySimSD)
-        
-        # On supprime les dates non recensement
-        
-        # Corrélation entre villes observées triées(à chaque date de recensement) et moyenne des réplications (idem) triée.
-        # Idem en log
-        # A chaque date, écart-type (ou C.V ?) simulé/observé.
-    })
     
     output$zipfEvolution <- renderPlot({
         if (!is.null(dataValues$calcDF)){

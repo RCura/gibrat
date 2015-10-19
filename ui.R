@@ -84,6 +84,10 @@ shinyUI(
                                                                        tags$img(src="loading-gif-animation.gif",height=50,width=50)),
                                                               h4("Computation can be long, be patient...")),
                                              fluidRow(
+                                                 column(6, HTML("Do you want to display the observed elements that were'nt simulated ?")),
+                                                 column(6, checkboxInput("showNonSimulated",label = NULL, value = TRUE))
+                                             ),
+                                             fluidRow(
                                                  column(6, plotOutput('gibratRankSize')),
                                                  column(6, plotOutput('gibratExpectation'))
                                              ),
@@ -92,7 +96,6 @@ shinyUI(
                                                  column(6, plotOutput('sdEvolution'))
                                              ),
                                              downloadButton(outputId="simresultDL", label="Download simulations results")),
-                                    #tabPanel("Correlations", tableOutput('correlations')),
                                     tabPanel("About", includeMarkdown(path="README.md"))
                                     
                                 )
