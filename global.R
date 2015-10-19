@@ -107,8 +107,13 @@ run_replication <- function (obs_data, growthtable)
             normalGrowthRate <- rnorm(1, mean=currentGrowthMean, sd=currentGrowthSd)
             
             newPop <- currentPop * (1 + normalGrowthRate/100)
-            if (!is.na(newPop)) {
-                my_replication_matrix[j,i+1] <-  ifelse(newPop > 0, newPop, 1)    
+            
+            ## If it's the last step, do not keep values for comparison
+            if (i == timesteps){
+                my_replication_matrix[j, i+1] <- ifelse(!is.na(newPop),ifelse(newPop > 0, newPop, 1), NA)
+            } else {
+                if (!is.na(newPop)) {
+                    my_replication_matrix[j,i+1] <-  ifelse(newPop > 0, newPop, 1)                     }
             }
         }
     }

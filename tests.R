@@ -119,11 +119,11 @@ getXmin3(pl_m)
 
 #####  GIBRAT SIM  #####
 
-testDF <- data.frame(`1900` = c(10,20,30,NA,50),check.rows = FALSE, check.names = FALSE, stringsAsFactors = FALSE)
-testDF$`1905`  <-  c(10, 20, 30, 10, 50)
-testDF$`1908`  <-  c(NA, 25, 35, 20, 80)
-testDF$`1911`  <-  c(20, 20, NA, 10, 100)
-testDF[6,] <- c(NA, NA, 15, 20)
+testDF <- data.frame(`1900` = c(10,20,30,NA,50, NA),check.rows = FALSE, check.names = FALSE, stringsAsFactors = FALSE)
+testDF$`1905`  <-  c(10, 20, 30, 10, 50, NA)
+testDF$`1908`  <-  c(NA, 25, 35, 20, 80, NA)
+testDF$`1911`  <-  c(20, 20, NA, 10, 100, NA)
+testDF[6,] <- c(NA, NA, NA, 20)
 testDF
 
 source(file = 'global.R')
@@ -131,7 +131,7 @@ source(file = 'global.R')
 df <- testDF
 
 ###
-df <- SouthAfrica[,5:10]
+#df <- SouthAfrica[,5:10]
 
 ###
 reps <- 1
@@ -175,8 +175,12 @@ reps <- 1
                 normalGrowthRate <- rnorm(1, mean=currentGrowthMean, sd=currentGrowthSd)
                 
                 newPop <- currentPop * (1 + normalGrowthRate/100)
-                if (!is.na(newPop)) {
-                    my_replication_matrix[j,i+1] <-  ifelse(newPop > 0, newPop, 1)    
+                
+                if (i == timesteps){
+                    my_replication_matrix[j, i+1] <- ifelse(!is.na(newPop),ifelse(newPop > 0, newPop, 1), NA)
+                } else {
+                    if (!is.na(newPop)) {
+                        my_replication_matrix[j,i+1] <-  ifelse(newPop > 0, newPop, 1)                     }
                 }
             }
         }
