@@ -5,6 +5,8 @@ library(poweRlaw)
 library(DT)
 library(reshape2)
 library(dplyr)
+library(parallel)
+library(moments)
 # TODO : Add a computation of correlation for each census date observed/ mean of simulated
 
 # Define server logic for random distribution application
@@ -734,9 +736,9 @@ shinyServer(function(input, output, session) {
             mutate(logpop = log(pop)) %>%
             mutate(sklogpop = log(pop - 10E3))
         
-        resultDF <- data.frame(matrix(0, nrow = 6, ncol = length(unique(lastPops$system))), stringsAsFactors = FALSE)
+        resultDF <- data.frame(matrix(0, nrow = 8, ncol = length(unique(lastPops$system))), stringsAsFactors = FALSE)
         colnames(resultDF) <- unique(lastPops$system)
-        row.names(resultDF) <- c("Year", "Nb Cities", "meanLog",  "sdLog", "p.value (Shapiro-Wilk)", "p.value (Kolmogorov-Smirnoff)")
+        row.names(resultDF) <- c("Year", "Nb Cities", "meanLog",  "sdLog", "p.value (Shapiro-Wilk)", "p.value (Kolmogorov-Smirnoff)", "skewness", "kurtosis")
         for (currentSystem in unique(lastPops$system)){
             currentPops <- lastPops %>%
                 filter(system == currentSystem)
@@ -745,6 +747,8 @@ shinyServer(function(input, output, session) {
             nbCities <- nrow(currentPops)
             meanLog <- mean(currentPops$sklogpop)
             sdLog <- sd(currentPops$sklogpop)
+            skewnessLog <- skewness(currentPops$sklogpop)
+            kurtosisLog <- kurtosis(currentPops$sklogpop)
             
             if (nbCities > 5000){
                 SW.data <- sample(x = currentPops$sklogpop, size = 5000)
@@ -754,7 +758,7 @@ shinyServer(function(input, output, session) {
             SW.pvalue <- shapiro.test(SW.data)$p.value
             KStest <- ks.test(currentPops$sklogpop, "pnorm" )
             KS.pvalue <- KStest$p.value
-            resultDF[,currentSystem] <- c(year, nbCities, meanLog, sdLog, SW.pvalue,  KS.pvalue)
+            resultDF[,currentSystem] <- c(year, nbCities, meanLog, sdLog, SW.pvalue,  KS.pvalue,  skewnessLog, kurtosisLog)
         }
     
         resultDF

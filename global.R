@@ -1,5 +1,3 @@
-library(parallel)
-
 
 ############ COMPUTE_GROWTHTABLE ############
 

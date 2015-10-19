@@ -104,7 +104,7 @@ shinyUI(
                             tabPanel("LogNormality",
                                      fluidRow(plotOutput("shapeComparison")),
                                      fluidRow(plotOutput('qqplotsComparison')),
-                                     fluidRow(tableOutput('normalityComparison'))
+                                     fluidRow(column(width=12,tableOutput('normalityComparison')))
                                      ),
                             tabPanel("Zipf curves",
                                      fluidRow(plotOutput("sysZipfEvolution")),
