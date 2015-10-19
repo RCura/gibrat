@@ -408,3 +408,25 @@ geom_density(data=lastPops,  aes(x=logpop, y=..density..), colour = "firebrick1"
     ks.test(sort(as.numeric(currentPops$sklogpop)), "pnorm")
     shapiro.test(sort(as.numeric(currentPops$sklogpop)))
     
+    
+    
+    
+    rankedData <- BRICS %>%
+        group_by(system, year) %>%
+        mutate(rank = min_rank(-pop)) %>%
+        mutate(year = as.factor(year))
+    
+    rankedData <- na.omit(rankedData)
+    
+    ggplot(data=rankedData, aes(x=rank, y=pop,group=year, colour=year), environment = environment()) + 
+        geom_line(size=1) +
+        scale_colour_gradient(low="skyblue3", high="firebrick4") +
+        scale_alpha(range=c(0.1,1)) +
+        scale_y_log10() +
+        scale_x_log10() +
+        facet_wrap(~system, scales = "fixed", ncol = 3) + 
+        labs(title = "Rank-Size evolution",
+             x = "Rank",
+             y = "Population") +
+        theme_bw()
+    

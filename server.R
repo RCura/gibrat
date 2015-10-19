@@ -763,6 +763,51 @@ shinyServer(function(input, output, session) {
     
         resultDF
     })
+    
+    output$sysZipfEvolution <- renderPlot({
+        
+        rankedData <- BRICS %>%
+            group_by(system, year) %>%
+            mutate(rank = min_rank(-pop))
+        
+        rankedData <- na.omit(rankedData)
+        
+        ggplot(data=rankedData, aes(x=rank, y=pop, colour=year, group = year), environment = environment()) + 
+            geom_line(size=0.4) +
+            scale_colour_gradient(low="skyblue3", high="firebrick4") +
+            scale_alpha(range=c(0.1,1)) +
+            scale_y_log10() +
+            scale_x_log10() +
+            facet_wrap(~system, scales = "fixed", ncol = 3) + 
+            labs(title = "Rank-Size evolution",
+                 x = "Rank",
+                 y = "Population") +
+            theme_bw()
+    })
+    
+    output$sysZipfLast <- renderPlot({
+        maxyear <- BRICS %>%
+            group_by(system) %>%
+            summarise(yearmax = max(year))
+        
+        rankedLastPops <- BRICS %>%
+            semi_join(maxyear, by= c("system",  "year" = "yearmax")) %>%
+            filter(!is.na(pop)) %>%
+            group_by(system) %>%
+            mutate(rank = min_rank(-pop))
+        
+        ggplot(data=rankedLastPops, aes(x=rank, y=pop, group=system, colour=system), environment = environment()) + 
+            geom_line(size=1) +
+            scale_y_log10() +
+            scale_x_log10() +
+            #facet_wrap(~system, scales =  "free", ncol = 3) + 
+            labs(title = "Rank-Size evolution",
+                 x = "Rank",
+                 y = "Population") +
+            theme_bw()
+        
+    })
+    
     updateInputs <- function(session, columns, realColumns){        
         updateSelectInput(session=session, inputId="timeColumnSelected",
                           choices=realColumns, selected=realColumns)
