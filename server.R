@@ -344,8 +344,15 @@ shinyServer(function(input, output, session) {
         lastRealTime <- ncol(dataValues$calcDF)
         lastSimTime <- dim(computedValues$simData)[2]
         
-        cData <- na.omit(dataValues$calcDF[,lastRealTime])
-        sData <- na.omit(computedValues$simData[,lastSimTime,])
+        sData <- computedValues$simData[,lastSimTime,]
+        
+        cData <- dataValues$calcDF[,lastRealTime]
+        if (!input$showNonSimulated){
+            cData <- cData[!is.na(sData[,1])]
+        }
+        
+        sData <- na.omit(sData)
+        cData <- na.omit(cData)
         mData <- na.omit(computedValues$simMeans[,lastSimTime])
         
         maxpop <- max(max(cData),max(sData))
@@ -374,6 +381,11 @@ shinyServer(function(input, output, session) {
         obsData <- dataValues$calcDF[,lastObsTime]
         simData <- computedValues$simMeans[,lastSimTime]
         
+        if (!input$showNonSimulated){
+            obsData <- obsData[!is.na(simData)]
+            simData <- na.omit(simData)
+        }
+        
         minData <- min(obsData, simData, na.rm = TRUE)
         maxData <- max(obsData, simData, na.rm = TRUE)
         
@@ -387,6 +399,7 @@ shinyServer(function(input, output, session) {
     output$meanEvolution <- renderPlot({
         if (is.null(computedValues$simMeans)){ return()}
         obsData <- dataValues$calcDF
+        
         simData <- as.data.frame(computedValues$simMeans, check.names = FALSE)
         simData <- simData[,colnames(simData) %in% colnames(obsData)]
         #print(str(simData))
