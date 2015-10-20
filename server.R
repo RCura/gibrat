@@ -736,9 +736,9 @@ shinyServer(function(input, output, session) {
             mutate(logpop = log(pop)) %>%
             mutate(sklogpop = log(pop - 10E3))
         
-        resultDF <- data.frame(matrix(0, nrow = 8, ncol = length(unique(lastPops$system))), stringsAsFactors = FALSE)
+        resultDF <- data.frame(matrix(0, nrow = 9, ncol = length(unique(lastPops$system))), stringsAsFactors = FALSE)
         colnames(resultDF) <- unique(lastPops$system)
-        row.names(resultDF) <- c("Year", "Nb Cities", "meanLog",  "sdLog", "p.value (Shapiro-Wilk)", "p.value (Kolmogorov-Smirnoff)", "skewness", "kurtosis")
+        row.names(resultDF) <- c("Year", "Nb Cities", "meanLog",  "sdLog", "RelSd", "p.value (Shapiro-Wilk)", "p.value (Kolmogorov-Smirnoff)", "skewness", "kurtosis")
         for (currentSystem in unique(lastPops$system)){
             currentPops <- lastPops %>%
                 filter(system == currentSystem)
@@ -747,6 +747,7 @@ shinyServer(function(input, output, session) {
             nbCities <- nrow(currentPops)
             meanLog <- mean(currentPops$sklogpop)
             sdLog <- sd(currentPops$sklogpop)
+            relsd <- sdLog/meanLog
             skewnessLog <- skewness(currentPops$sklogpop)
             kurtosisLog <- kurtosis(currentPops$sklogpop)
             
@@ -758,7 +759,7 @@ shinyServer(function(input, output, session) {
             SW.pvalue <- shapiro.test(SW.data)$p.value
             KStest <- ks.test(currentPops$sklogpop, "pnorm" )
             KS.pvalue <- KStest$p.value
-            resultDF[,currentSystem] <- c(year, nbCities, meanLog, sdLog, SW.pvalue,  KS.pvalue,  skewnessLog, kurtosisLog)
+            resultDF[,currentSystem] <- c(year, nbCities, meanLog, sdLog, relsd, SW.pvalue,  KS.pvalue,  skewnessLog, kurtosisLog)
         }
     
         resultDF
