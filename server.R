@@ -7,6 +7,7 @@ library(reshape2)
 library(dplyr)
 library(parallel)
 library(moments)
+library(xtable)
 # TODO : Add a computation of correlation for each census date observed/ mean of simulated
 
 # Define server logic for random distribution application
@@ -805,6 +806,52 @@ shinyServer(function(input, output, session) {
                  y = "Population") +
             theme_bw()
         
+    })
+    
+    output$relativesSharesApported <- renderUI({
+        blob <- list()
+        for (currSys in unique(BRICS$system)){
+            grouped_summary <- BRICS %>%
+                filter(!is.na(pop), system == currSys) %>%
+                group_by(year) %>%
+                summarise(nbCities = n(), totalPop = sum(pop, na.rm = TRUE))
+
+            
+            #grouped_summary
+            df <- as.data.frame(t(grouped_summary))
+            colnames(df) <- df[1,]
+            
+            growthratetable <- df[1:ncol(df)-1]
+            # Creation des noms de périodes
+            for (i in 1:ncol(growthratetable))
+            {
+                t0_name <- colnames(df[i])
+                t1_name <- colnames(df[i+1])
+                myname <- as.character(paste(t0_name, t1_name, sep="-"))
+                colnames(growthratetable)[i] <- myname
+            }
+            growthratetable <- growthratetable[-1,]
+            baseDF <- grouped_summary
+            for (i in (2:nrow(baseDF))){
+                changePop <- (baseDF[i,"totalPop"] - baseDF[i - 1,"totalPop"]) / baseDF[i - 1,"totalPop"]
+                growthratetable[1,i-1] <- (baseDF[i,"nbCities"] - baseDF[i - 1,"nbCities"])
+                growthratetable[2,i-1] <- (baseDF[i,"nbCities"] - baseDF[i - 1,"nbCities"]) / baseDF[i - 1,"nbCities"]
+                growthratetable[3, i-1] <- (baseDF[i,"totalPop"] - baseDF[i - 1,"totalPop"])
+                growthratetable[4, i-1] <- (baseDF[i,"totalPop"] - baseDF[i - 1,"totalPop"]) / baseDF[i - 1,"totalPop"]
+            }
+            growthratetable
+            rownames(growthratetable) <- c("New Cities",  "% new cities", "New Pop", "% new pop")
+            
+           
+           blob[[currSys]] <- 
+               # save table into slot in created list
+               # print table as HTML with additional formatting options
+               print(xtable(growthratetable, caption=paste("System:", currSys)),
+                     type="html",
+                     html.table.attributes='class="data table table-bordered table-condensed"',
+                     caption.placement="top")
+        }
+        return((div(HTML(lapply(blob, paste)),class="shiny-html-output")))
     })
     
     updateInputs <- function(session, columns, realColumns){        

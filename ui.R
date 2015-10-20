@@ -113,6 +113,7 @@ shinyUI(
                                      fluidRow(plotOutput("sysZipfEvolution")),
                                      fluidRow(plotOutput("sysZipfLast"))),
                             tabPanel("Databases completeness",
+                                     uiOutput("relativesSharesApported"),
                                      fluidRow(tableOutput('numCitiesAppeared')),
                                      fluidRow(tableOutput('popCitiesAppeared')))
                         )
