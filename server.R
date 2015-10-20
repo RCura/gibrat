@@ -402,6 +402,16 @@ shinyServer(function(input, output, session) {
         
         simData <- as.data.frame(computedValues$simMeans, check.names = FALSE)
         simData <- simData[,colnames(simData) %in% colnames(obsData)]
+        
+        # FIXME : Ugly, to be changed
+        if (!input$showNonSimulated){
+            for (i in 1:nrow(obsData)){
+                for (j in 1:ncol(obsData)){
+                    obsData[i,j] <- ifelse(is.na(simData[i,j]), NA, obsData[i,j])
+                }
+            }
+        }
+        
         #print(str(simData))
         obsMean <- unlist(lapply(obsData, mean, na.rm = TRUE))
         simMean <- unlist(lapply(simData, mean, na.rm = TRUE))
@@ -419,7 +429,17 @@ shinyServer(function(input, output, session) {
         obsData <- dataValues$calcDF
         simData <- as.data.frame(computedValues$simMeans, check.names = FALSE)
         simData <- simData[,colnames(simData) %in% colnames(obsData)]
-        #print(str(simData))
+        
+        # FIXME : Ugly, to be changed
+        if (!input$showNonSimulated){
+            for (i in 1:nrow(obsData)){
+                for (j in 1:ncol(obsData)){
+                    obsData[i,j] <- ifelse(is.na(simData[i,j]), NA, obsData[i,j])
+                }
+            }
+        }
+    
+        
         obsSD <- unlist(lapply(obsData, sd, na.rm = TRUE))
         simSD <- unlist(lapply(simData, sd, na.rm = TRUE))
         maxData <- max(obsSD, simSD)
