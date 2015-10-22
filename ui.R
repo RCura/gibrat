@@ -105,11 +105,15 @@ shinyUI(
                tabPanel("System comparison",
                         tabsetPanel(
                             tabPanel("LogNormality",
+                                     fluidRow(downloadButton('histDl', "Download histograms"),
+                                              downloadButton('qqDl', "Download qqplots")),
                                      fluidRow(plotOutput("shapeComparison")),
                                      fluidRow(plotOutput('qqplotsComparison')),
                                      fluidRow(column(width=12,tableOutput('normalityComparison')))
                                      ),
                             tabPanel("Zipf curves",
+                                     fluidRow(downloadButton('zipfEvolDl', 'Download evolution plots'),
+                                              downloadButton('zipfLastDl', 'Download final date plot')),
                                      fluidRow(plotOutput("sysZipfEvolution")),
                                      fluidRow(plotOutput("sysZipfLast"))),
                             tabPanel("Databases completeness",

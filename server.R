@@ -638,7 +638,7 @@ shinyServer(function(input, output, session) {
         }
     })
     
-    output$shapeComparison <- renderPlot({
+    shapeComparisonPlot <- reactive({
         maxyear <- BRICS %>%
             group_by(system) %>%
             summarise(yearmax = max(year))
@@ -687,7 +687,21 @@ shinyServer(function(input, output, session) {
             xlab("Population (last census)")
     })
     
-    output$qqplotsComparison <- renderPlot({
+    output$shapeComparison <- renderPlot({
+        shapeComparison <- shapeComparisonPlot()
+        print(shapeComparison)
+    })
+    
+    output$histDl <- downloadHandler(
+          filename = function() {
+            paste('histograms-', Sys.Date(), '.pdf', sep='')
+          },
+          content = function(file) {
+              ggsave(file, plot = shapeComparisonPlot(), device = pdf)
+          }
+        )
+    
+    qqplotsComparisonPlot <-reactive({
         maxyear <- BRICS %>%
             group_by(system) %>%
             summarise(yearmax = max(year))
@@ -727,6 +741,20 @@ shinyServer(function(input, output, session) {
             xlab("Theoretical Population") +
             ylab("Observed Population")
     })
+    
+    output$qqplotsComparison <- renderPlot({
+        qqplotsComparison <- qqplotsComparisonPlot()
+        print(qqplotsComparison)
+    })
+    
+    output$qqDl <- downloadHandler(
+        filename = function() {
+            paste('QQplot-', Sys.Date(), '.pdf', sep='')
+        },
+        content = function(file) {
+            ggsave(file, plot = qqplotsComparisonPlot(), device = pdf)
+        }
+    )
     
     output$normalityComparison <- renderTable({
         maxyear <- BRICS %>%
@@ -768,7 +796,7 @@ shinyServer(function(input, output, session) {
         resultDF
     })
     
-    output$sysZipfEvolution <- renderPlot({
+    sysZipfEvolutionPlot <- reactive({
         
         rankedData <- BRICS %>%
             filter(!is.na(pop),pop >= 10E3) %>%
@@ -789,8 +817,23 @@ shinyServer(function(input, output, session) {
                  y = "Population") +
             theme_bw()
     })
+
     
-    output$sysZipfLast <- renderPlot({
+    output$sysZipfEvolution <- renderPlot({
+        sysZipfEvolution <- sysZipfEvolutionPlot()
+        print(sysZipfEvolution)
+    })
+    
+    output$zipfEvolDl <- downloadHandler(
+        filename = function() {
+            paste('zipfEvolplot-', Sys.Date(), '.pdf', sep='')
+        },
+        content = function(file) {
+            ggsave(file, plot = sysZipfEvolutionPlot(), device = pdf)
+        }
+    )
+    
+    sysZipfLastPlot <-reactive({
         maxyear <- BRICS %>%
             group_by(system) %>%
             summarise(yearmax = max(year))
@@ -810,8 +853,22 @@ shinyServer(function(input, output, session) {
                  x = "Rank",
                  y = "Population") +
             theme_bw()
-        
     })
+    
+    output$sysZipfLast <- renderPlot({
+        sysZipfLast <- sysZipfLastPlot()
+        print(sysZipfLast)
+    })
+    
+    
+    output$zipfLastDl <- downloadHandler(
+        filename = function() {
+            paste('zipfLastplot-', Sys.Date(), '.pdf', sep='')
+        },
+        content = function(file) {
+            ggsave(file, plot = sysZipfLastPlot(), device = pdf)
+        }
+    )
     
     output$relativesSharesApported <- renderUI({
         blob <- list()
