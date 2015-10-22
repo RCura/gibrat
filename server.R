@@ -479,7 +479,10 @@ shinyServer(function(input, output, session) {
     
     
     output$plotZipf <- renderPlot({
-        zipf <- analysisValues$zipfTable
+        zipf <- analysisValues$zipfTable %>%
+            filter(!is.na(size), size >= 10E3)
+        
+        
         
         valBreaks=c(10E3, 100E3, 1E6, 10E6)
         
@@ -768,6 +771,7 @@ shinyServer(function(input, output, session) {
     output$sysZipfEvolution <- renderPlot({
         
         rankedData <- BRICS %>%
+            filter(!is.na(pop),pop >= 10E3) %>%
             group_by(system, year) %>%
             mutate(rank = min_rank(-pop))
         
@@ -793,7 +797,7 @@ shinyServer(function(input, output, session) {
         
         rankedLastPops <- BRICS %>%
             semi_join(maxyear, by= c("system",  "year" = "yearmax")) %>%
-            filter(!is.na(pop)) %>%
+            filter(!is.na(pop), pop >= 10E3) %>%
             group_by(system) %>%
             mutate(rank = min_rank(-pop))
         
