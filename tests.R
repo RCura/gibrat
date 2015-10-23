@@ -467,3 +467,18 @@ geom_density(data=lastPops,  aes(x=logpop, y=..density..), colour = "firebrick1"
     growthratetable
     rownames(growthratetable) <- c("New Cities",  "% new cities", "New Pop", "% new pop")
     
+    
+    ####### BRICS TO CALCDF ######
+    brazilLong <- BRICS %>%
+        filter(system == "Brazil")
+    
+    brazilWide <- brazilLong %>%
+        tidyr::spread(year, pop)
+    
+    test <- "Brazil"
+    
+    BRICS %>%
+        filter_(sprintf("system == '%s'", test)) %>%
+        glimpse()
+    
+    
