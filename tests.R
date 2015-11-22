@@ -256,6 +256,15 @@ SouthAfricaLong <- SouthAfrica %>%
     mutate(year=as.integer(as.character(year)))
 glimpse(SouthAfricaLong)
 
+Europe$system <- "Europe"
+
+Europe <- subset(Europe, select = -Country)
+
+EuropeLong <- Europe %>%
+    gather(year, pop,  `1961`:`2011`) %>%
+    mutate(year=as.integer(as.character(year)))
+glimpse(EuropeLong)
+
 USALong <- USA %>%
     select(ID, Name, Lat, Long, system, `1960`:`2010`) %>%
     gather(year, pop,  `1960`:`2010`) %>%
@@ -270,7 +279,7 @@ BRICS <- BrazilLong %>%
     bind_rows(USALong)
 
 BRICS <- BRICS %>%
-    bind_rows(ChinaLong)
+    bind_rows(Europe)
 
 rm(ChinaLong)
 
