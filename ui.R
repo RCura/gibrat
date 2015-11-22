@@ -11,7 +11,7 @@ shinyUI(
                             sidebarPanel(
                                 selectInput(inputId = 'dataset', label = "Choose country",
                                             multiple = FALSE,
-                                            choices = c("South Africa", "Brazil", "Russia", "India", "China", "USA", "France")),
+                                            choices = c("South Africa", "Brazil", "Russia", "India", "China", "USA", "Europe")),
                                 tags$hr(),
                                 selectInput("timeColumnSelected", "Time columns :",choices="", multiple=TRUE, selectize=TRUE)
                                 

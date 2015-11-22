@@ -228,7 +228,6 @@ BrazilLong <- Brazil %>%
 glimpse(BrazilLong)
 
 ChinaLong <- China %>%
-    select(ID, Name, Lat, Long, system,  `1964`:`2010`) %>%
     gather(year, pop,  `1964`:`2010`) %>%
     mutate(year=as.integer(as.character(year)))
 glimpse(ChinaLong)
@@ -265,11 +264,19 @@ glimpse(USALong)
 
 BRICS <- BrazilLong %>%
     bind_rows(ChinaLong) %>%
-    bind_rows(FranceLong) %>%
     bind_rows(IndiaLong) %>%
     bind_rows(FSULong) %>%
     bind_rows(SouthAfricaLong)%>%
     bind_rows(USALong)
+
+BRICS <- BRICS %>%
+    bind_rows(ChinaLong)
+
+rm(ChinaLong)
+
+BRICS <- BRICS %>%
+    filter(system != 'France')
+
 View(BRICS)
  rm(list= c("BrazilLong", "ChinaLong", "FranceLong", "FSULong", "IndiaLong", "SouthAfricaLong", "USALong"))
  

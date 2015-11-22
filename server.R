@@ -58,7 +58,7 @@ shinyServer(function(input, output, session) {
         } else if (countryName ==  "USA"){
             dataValues$rawDF <- USA
         } else  {
-            dataValues$rawDF <- France 
+            dataValues$rawDF <- Europe 
         }
         
         timeColumns <- as.numeric(na.omit(as.numeric(unlist(colnames(dataValues$rawDF)))))
