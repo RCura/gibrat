@@ -726,15 +726,18 @@ shinyServer(function(input, output, session) {
                 bind_rows(qqDiff)
         }
         
-        labels <-  c(10000,1E5,1E6,10E6)
-        breaks <- log(labels)
-        #labels <- labels + 10E3
+
+        xyDF$x <- exp(xyDF$x)
+        xyDF$y <- exp(xyDF$y)
+        View(xyDF)
+        breaks <- c(1, 90000, 990000, 9990000)
+        labels <- c(10E3, 100E3, 1E6, 10E6)
         
         ggplot(data = xyDF, aes(x=x, y=y)) +
             geom_smooth(method="lm", level=0.5, size=1.5, colour="cornflowerblue") +
             geom_point(colour = "black",  alpha =  0.2,  fill = "firebrick1") +
-            scale_x_continuous(breaks=breaks, labels=labels ) +
-            scale_y_continuous(breaks=breaks, labels=labels) +
+            scale_x_log10(breaks=breaks, labels=labels) +
+            scale_y_log10(breaks=breaks, labels=labels) +
             facet_wrap(~sysYear, scales = "fixed", ncol = 7) + 
             ggtitle("Normal Q-Q plot\n(log(Populations (Χ₀ =  10E3)))") +
             theme_bw() +
