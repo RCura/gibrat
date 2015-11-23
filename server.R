@@ -8,6 +8,8 @@ library(dplyr)
 library(parallel)
 library(moments)
 library(xtable)
+
+library(acc.ggplot2)
 # TODO : Add a computation of correlation for each census date observed/ mean of simulated
 
 # Define server logic for random distribution application
@@ -714,7 +716,7 @@ shinyServer(function(input, output, session) {
         lastPops$sysYear <- paste(lastPops$system, "\n(",  lastPops$year, ")", sep="")
         
         xyDF <- data.frame(system = character(), x=numeric(), y=numeric(), stringsAsFactors=FALSE) 
-        
+        countriesR2 <- c()
         for (currentSysYear in unique(lastPops$sysYear)){
             currentPops <- lastPops %>%
                 filter(sysYear == currentSysYear)
@@ -724,14 +726,21 @@ shinyServer(function(input, output, session) {
                                  stringsAsFactors = FALSE)
             xyDF <- xyDF %>%
                 bind_rows(qqDiff)
+            
+            currentLM <- summary(lm(qqDiff$x ~ qqDiff$y))
+            countriesR2 <- c(countriesR2, currentLM$r.squared)
         }
         
-
+        print(countriesR2)
         xyDF$x <- exp(xyDF$x)
         xyDF$y <- exp(xyDF$y)
-        View(xyDF)
-        breaks <- c(1, 90000, 990000, 9990000)
-        labels <- c(10E3, 100E3, 1E6, 10E6)
+        breaks <- c(1, 15000 ,90000, 990000, 9990000)
+        labels <- c("10 000", "25 000", "100 000", "1E6", "10E6")
+        
+        library(grid)
+        
+        grob <- grobTree(textGrob(paste("R² = ", countriesR2, sep=""), x=0.1,  y=0.95, hjust=0,
+                                  gp=gpar(col="red", fontsize=13, fontface="italic")))
         
         ggplot(data = xyDF, aes(x=x, y=y)) +
             geom_smooth(method="lm", level=0.5, size=1.5, colour="cornflowerblue") +
@@ -743,7 +752,9 @@ shinyServer(function(input, output, session) {
             theme_bw() +
             theme(strip.text = element_text(size=14)) +
             xlab("Theoretical Population") +
-            ylab("Observed Population")
+            ylab("Observed Population") +
+            annotation_custom(grob)
+        
     })
     
     output$qqplotsComparison <- renderPlot({
