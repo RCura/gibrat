@@ -260,6 +260,8 @@ Europe$system <- "Europe"
 
 Europe <- subset(Europe, select = -Country)
 
+library(tidyr)
+
 EuropeLong <- Europe %>%
     gather(year, pop,  `1961`:`2011`) %>%
     mutate(year=as.integer(as.character(year)))
@@ -279,7 +281,7 @@ BRICS <- BrazilLong %>%
     bind_rows(USALong)
 
 BRICS <- BRICS %>%
-    bind_rows(Europe)
+    bind_rows(EuropeLong)
 
 rm(ChinaLong)
 
@@ -497,4 +499,8 @@ geom_density(data=lastPops,  aes(x=logpop, y=..density..), colour = "firebrick1"
         filter_(sprintf("system == '%s'", test)) %>%
         glimpse()
     
+    
+    BRICS <- BRICS %>%
+        filter(system != "Europe") %>%
+        select(ID, Name, Lat, Long, system, year, pop)
     
