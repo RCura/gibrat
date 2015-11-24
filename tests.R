@@ -250,6 +250,8 @@ FSULong <- Russia %>%
     mutate(year=as.integer(as.character(year)))
 glimpse(FSULong)
 
+library(dplyr)
+library(tidyr)
 SouthAfricaLong <- SouthAfrica %>%
     select(ID, Name, Lat, Long, system, `1960`:`2001`) %>%
     gather(year, pop,  `1960`:`2001`) %>%
@@ -281,7 +283,10 @@ BRICS <- BrazilLong %>%
     bind_rows(USALong)
 
 BRICS <- BRICS %>%
-    bind_rows(EuropeLong)
+    filter(system != "South Africa")
+
+BRICS <- BRICS %>%
+    bind_rows(SouthAfricaLong)
 
 rm(ChinaLong)
 

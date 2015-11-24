@@ -801,7 +801,7 @@ shinyServer(function(input, output, session) {
                 SW.data <-  currentPops$sklogpop
             }
             SW.pvalue <- suppressWarnings(shapiro.test(SW.data)$p.value)
-            KStest <- suppressWarnings(ks.test(currentPops$sklogpop, "pnorm" ))
+            KStest <- suppressWarnings(ks.test(currentPops$sklogpop, "pnorm", exact = FALSE))
             KS.pvalue <- KStest$p.value
             resultDF[,currentSystem] <- c(year, nbCities, meanLog, sdLog, relsd, SW.pvalue,  KS.pvalue,  skewnessLog, kurtosisLog)
         }
@@ -887,7 +887,7 @@ shinyServer(function(input, output, session) {
         
         blob <- list()
         for (currSys in unique(BRICS$system)){
-            currentWideDF <- BRICS %>% filter(system == currSys) %>% select(ID, year, pop) %>% tidyr::spread(year, pop)
+            currentWideDF <- BRICS %>% filter(system == currSys, pop > 10E3) %>% select(ID, year, pop) %>% tidyr::spread(year, pop)
             resultWideDF <- currentWideDF
             resultWideDF[,] <- NA
             for (currRow in 1:nrow(currentWideDF)){
