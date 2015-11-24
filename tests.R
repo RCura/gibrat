@@ -550,4 +550,53 @@ for (currentSys in systemOrder){
     
 }
 
-    
+currSys <- "China"
+
+currentWideDF <- BRICS %>% filter(system == currSys) %>% select(ID, year, pop) %>% tidyr::spread(year, pop)
+resultWideDF <- currentWideDF
+resultWideDF[,] <- NA
+for (currRow in 1:nrow(currentWideDF)){
+    for (currCol in 3:ncol(currentWideDF)){
+        if (is.na(currentWideDF[currRow,currCol-1]) && !is.na(currentWideDF[currRow,currCol])){
+            resultWideDF[currRow, currCol] <- currentWideDF[currRow, currCol]    
+        }
+    }
+}
+newPops <- apply(X = resultWideDF[,-1], MARGIN = 2, FUN = function(x){sum(x, na.rm = TRUE)})
+sumPops <- apply(X = currentWideDF[,-1], MARGIN = 2, FUN = function(x){sum(x, na.rm = TRUE)})
+newCities <- apply(X = resultWideDF[,-1], MARGIN = 2, FUN = function(x){length(na.omit(x))})
+sumCities <- apply(X = currentWideDF[,-1], MARGIN = 2, FUN = function(x){length(na.omit(x))})
+
+sharePops <- newPops / sumPops
+shareCities <- newCities / sumCities
+
+grouped_summary <- BRICS %>%
+    filter(!is.na(pop), system == currSys) %>%
+    group_by(year) %>%
+    summarise(nbCities = n(), totalPop = sum(pop, na.rm = TRUE))
+
+
+#grouped_summary
+df <- as.data.frame(t(grouped_summary))
+colnames(df) <- df[1,]
+
+growthratetable <- df[1:ncol(df)-1]
+# Creation des noms de périodes
+for (i in 1:ncol(growthratetable))
+{
+    t0_name <- colnames(df[i])
+    t1_name <- colnames(df[i+1])
+    myname <- as.character(paste(t0_name, t1_name, sep="-"))
+    colnames(growthratetable)[i] <- myname
+}
+growthratetable <- growthratetable[-1,]
+baseDF <- grouped_summary
+for (i in (2:nrow(baseDF))){
+    growthratetable[1,i-1] <- newCities[i]
+    growthratetable[2,i-1] <- shareCities[i]
+    growthratetable[3, i-1] <- newPops[i]
+    growthratetable[4, i-1] <- sharePops[i]
+}
+growthratetable
+rownames(growthratetable) <- c("New Cities",  "% new cities", "New Pop", "% new pop")
+growthratetable

@@ -9,6 +9,7 @@ library(parallel)
 library(moments)
 library(xtable)
 
+library(sp)
 library(cartography)
 library(OpenStreetMap)
 
@@ -883,13 +884,32 @@ shinyServer(function(input, output, session) {
     )
     
     output$relativesSharesApported <- renderUI({
+        
         blob <- list()
         for (currSys in unique(BRICS$system)){
+            currentWideDF <- BRICS %>% filter(system == currSys) %>% select(ID, year, pop) %>% tidyr::spread(year, pop)
+            resultWideDF <- currentWideDF
+            resultWideDF[,] <- NA
+            for (currRow in 1:nrow(currentWideDF)){
+                for (currCol in 3:ncol(currentWideDF)){
+                    if (is.na(currentWideDF[currRow,currCol-1]) && !is.na(currentWideDF[currRow,currCol])){
+                        resultWideDF[currRow, currCol] <- currentWideDF[currRow, currCol]    
+                    }
+                }
+            }
+            newPops <- apply(X = resultWideDF[,-1], MARGIN = 2, FUN = function(x){sum(x, na.rm = TRUE)})
+            sumPops <- apply(X = currentWideDF[,-1], MARGIN = 2, FUN = function(x){sum(x, na.rm = TRUE)})
+            newCities <- apply(X = resultWideDF[,-1], MARGIN = 2, FUN = function(x){length(na.omit(x))})
+            sumCities <- apply(X = currentWideDF[,-1], MARGIN = 2, FUN = function(x){length(na.omit(x))})
+            
+            sharePops <- newPops / sumPops
+            shareCities <- newCities / sumCities
+            
             grouped_summary <- BRICS %>%
                 filter(!is.na(pop), system == currSys) %>%
                 group_by(year) %>%
                 summarise(nbCities = n(), totalPop = sum(pop, na.rm = TRUE))
-
+            
             
             #grouped_summary
             df <- as.data.frame(t(grouped_summary))
@@ -907,11 +927,10 @@ shinyServer(function(input, output, session) {
             growthratetable <- growthratetable[-1,]
             baseDF <- grouped_summary
             for (i in (2:nrow(baseDF))){
-                changePop <- (baseDF[i,"totalPop"] - baseDF[i - 1,"totalPop"]) / baseDF[i - 1,"totalPop"]
-                growthratetable[1,i-1] <- (baseDF[i,"nbCities"] - baseDF[i - 1,"nbCities"])
-                growthratetable[2,i-1] <- (baseDF[i,"nbCities"] - baseDF[i - 1,"nbCities"]) / baseDF[i - 1,"nbCities"]
-                growthratetable[3, i-1] <- (baseDF[i,"totalPop"] - baseDF[i - 1,"totalPop"])
-                growthratetable[4, i-1] <- (baseDF[i,"totalPop"] - baseDF[i - 1,"totalPop"]) / baseDF[i - 1,"totalPop"]
+                growthratetable[1,i-1] <- newCities[i]
+                growthratetable[2,i-1] <- shareCities[i]
+                growthratetable[3, i-1] <- newPops[i]
+                growthratetable[4, i-1] <- sharePops[i]
             }
             growthratetable
             rownames(growthratetable) <- c("New Cities",  "% new cities", "New Pop", "% new pop")
