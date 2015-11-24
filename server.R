@@ -9,10 +9,9 @@ library(parallel)
 library(moments)
 library(xtable)
 
-library(acc.ggplot2)
-# TODO : Add a computation of correlation for each census date observed/ mean of simulated
+library(cartography)
+library(OpenStreetMap)
 
-# Define server logic for random distribution application
 shinyServer(function(input, output, session) {
     #options(warn=0, error=browser, shiny.error=browser)
     load("data/countriesPop.RData")
@@ -63,7 +62,7 @@ shinyServer(function(input, output, session) {
             dataValues$rawDF <- Europe 
         }
         
-        timeColumns <- as.numeric(na.omit(as.numeric(unlist(colnames(dataValues$rawDF)))))
+        timeColumns <- suppressWarnings(as.numeric(na.omit(as.numeric(unlist(colnames(dataValues$rawDF))))))
         allColumns <- c("None", unlist(colnames(dataValues$rawDF)))
         updateInputs(session, allColumns, timeColumns)
         
@@ -716,7 +715,7 @@ shinyServer(function(input, output, session) {
         lastPops$sysYear <- paste(lastPops$system, "\n(",  lastPops$year, ")", sep="")
         
         xyDF <- data.frame(system = character(), x=numeric(), y=numeric(), stringsAsFactors=FALSE) 
-        countriesR2 <- c()
+        countriesR2 <- data.frame(sysYear = character(), r2 = character(), stringsAsFactors = FALSE)
         for (currentSysYear in unique(lastPops$sysYear)){
             currentPops <- lastPops %>%
                 filter(sysYear == currentSysYear)
@@ -728,32 +727,30 @@ shinyServer(function(input, output, session) {
                 bind_rows(qqDiff)
             
             currentLM <- summary(lm(qqDiff$x ~ qqDiff$y))
-            countriesR2 <- c(countriesR2, currentLM$r.squared)
+            currentR2 <- round(currentLM$r.squared, digits = 4) * 100
+            countriesR2 <- countriesR2 %>%
+                bind_rows(data.frame(sysYear = currentSysYear, r2 = sprintf("R² = %s%%", currentR2)))
         }
         
-        print(countriesR2)
         xyDF$x <- exp(xyDF$x)
         xyDF$y <- exp(xyDF$y)
         breaks <- c(1, 15000 ,90000, 990000, 9990000)
         labels <- c("10 000", "25 000", "100 000", "1E6", "10E6")
         
-        library(grid)
-        
-        grob <- grobTree(textGrob(paste("R² = ", countriesR2, sep=""), x=0.1,  y=0.95, hjust=0,
-                                  gp=gpar(col="red", fontsize=13, fontface="italic")))
+        minValue <- min(xyDF$x, xyDF$y)
         
         ggplot(data = xyDF, aes(x=x, y=y)) +
             geom_smooth(method="lm", level=0.5, size=1.5, colour="cornflowerblue") +
             geom_point(colour = "black",  alpha =  0.2,  fill = "firebrick1") +
             scale_x_log10(breaks=breaks, labels=labels) +
             scale_y_log10(breaks=breaks, labels=labels) +
+            geom_text(data = countriesR2, aes(x = minValue, y = minValue, label = r2)) + 
             facet_wrap(~sysYear, scales = "fixed", ncol = 7) + 
             ggtitle("Normal Q-Q plot\n(log(Populations (Χ₀ =  10E3)))") +
             theme_bw() +
             theme(strip.text = element_text(size=14)) +
             xlab("Theoretical Population") +
-            ylab("Observed Population") +
-            annotation_custom(grob)
+            ylab("Observed Population")
         
     })
     
@@ -802,8 +799,8 @@ shinyServer(function(input, output, session) {
             } else {
                 SW.data <-  currentPops$sklogpop
             }
-            SW.pvalue <- shapiro.test(SW.data)$p.value
-            KStest <- ks.test(currentPops$sklogpop, "pnorm" )
+            SW.pvalue <- suppressWarnings(shapiro.test(SW.data)$p.value)
+            KStest <- suppressWarnings(ks.test(currentPops$sklogpop, "pnorm" ))
             KS.pvalue <- KStest$p.value
             resultDF[,currentSystem] <- c(year, nbCities, meanLog, sdLog, relsd, SW.pvalue,  KS.pvalue,  skewnessLog, kurtosisLog)
         }
@@ -930,6 +927,64 @@ shinyServer(function(input, output, session) {
         }
         return((div(HTML(lapply(blob, paste)),class="shiny-html-output")))
     })
+
+output$populationmaps <- renderUI({
+    
+    
+    library(cartography)
+    library(sp)
+    
+    
+    plot_output_list <- lapply(unique(BRICS$system), function(sysname) {
+        plotname <- paste("map", sysname, sep="")
+        fluidRow(plotOutput(plotname))
+    })
+    
+    do.call(tagList, plot_output_list)
+})    
+    observe({
+    maxyear <- BRICS %>%
+        group_by(system) %>%
+        summarise(yearmax = max(year))
+    
+    lastPops <- BRICS %>%
+        semi_join(maxyear, by= c("system",  "year" = "yearmax")) %>%
+        filter(pop > 10E3, !is.na(pop))
+    
+    for (sysname in unique(BRICS$system)) {
+        # Need local so that each item gets its own number. Without it, the value
+        # of i in the renderPlot() will be the same across all instances, because
+        # of when the expression is evaluated.
+        local({
+            currSys <- sysname
+            plotname <- paste("map", currSys, sep="")
+            
+            output[[plotname]] <- renderPlot({
+                currentPops <- as.data.frame(lastPops %>% filter(system == currSys), stringsAsFactors = FALSE)
+                
+                coordinates(currentPops) <- ~Long+Lat
+                proj4string(currentPops) <- CRS("+init=epsg:4326")
+                baseMap <- getTiles(spdf = currentPops, type = "osm")
+                fluidRow()
+                tilesLayer(baseMap)
+                
+                propSymbolsLayer(spdf = currentPops, # SpatialPolygonsDataFrame of the countries
+                                 df = currentPops@data,  # data frame of the regions
+                                 var = "pop",  # population
+                                 symbols = "circle", # type of symbol
+                                 border = "white", # color of the symbols borders
+                                 lwd = 1.5, # width of the symbols borders
+                                 legend.pos = "topleft", 
+                                 legend.title.txt = "Total population")
+                # Layout plot
+                layoutLayer(title = sprintf("Cities in %s", currentSys),
+                            author = "Base map: Map tiles by OSM, under CC BY 3.0. Data by OpenStreetMap, under CC BY SA.",
+                            scale = NULL, frame = TRUE,
+                            col = "#688994") # color of the frame
+            })
+        })
+    }
+})
     
     updateInputs <- function(session, columns, realColumns){        
         updateSelectInput(session=session, inputId="timeColumnSelected",

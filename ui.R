@@ -119,7 +119,9 @@ shinyUI(
                             tabPanel("Databases completeness",
                                      uiOutput("relativesSharesApported"),
                                      fluidRow(tableOutput('numCitiesAppeared')),
-                                     fluidRow(tableOutput('popCitiesAppeared')))
+                                     fluidRow(tableOutput('popCitiesAppeared'))),
+                            tabPanel("Maps",
+                                     uiOutput("populationmaps"))
                         )
                         )
                

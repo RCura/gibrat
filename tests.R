@@ -503,4 +503,51 @@ geom_density(data=lastPops,  aes(x=logpop, y=..density..), colour = "firebrick1"
     BRICS <- BRICS %>%
         filter(system != "Europe") %>%
         select(ID, Name, Lat, Long, system, year, pop)
+
+
+############ MAP ##############
+
+library(cartography)
+library(sp)
+
+# keep only last date for each country
+maxyear <- BRICS %>%
+    group_by(system) %>%
+    summarise(yearmax = max(year))
+
+lastPops <- BRICS %>%
+    semi_join(maxyear, by= c("system",  "year" = "yearmax")) %>%
+    filter(pop > 10E3, !is.na(pop))
+
+layoutMatrix <- matrix(data = c(1,1,1,1,1,1,2,2,3,3,4,4,5,5,5,5,5,5,6,6,6,7,7,7), ncol = 6, byrow = TRUE)
+layout(layoutMatrix)
+layout.show(n = 7)
+
+systemOrder <- c("Europe", "Brazil", "South Africa", "USA", "Former USSR", "China", "India")
+
+for (currentSys in systemOrder){
+    currentPops <- as.data.frame(lastPops %>% filter(system == currentSys), stringsAsFactors = FALSE)
+    ## On converti en SPDF
+
+    coordinates(currentPops) <- ~Long+Lat
+    proj4string(currentPops) <- CRS("+init=epsg:4326")
+    baseMap <- getTiles(spdf = currentPops, type = "osm")
+    tilesLayer(baseMap)
+    
+    propSymbolsLayer(spdf = currentPops, # SpatialPolygonsDataFrame of the countries
+                     df = currentPops@data,  # data frame of the regions
+                     var = "pop",  # population
+                     symbols = "circle", # type of symbol
+                     border = "white", # color of the symbols borders
+                     lwd = 1.5, # width of the symbols borders
+                     legend.pos = "topleft", 
+                     legend.title.txt = "Total population")
+    # Layout plot
+    layoutLayer(title = sprintf("Cities in %s", currentSys),
+                author = "Base map: Map tiles by OSM, under CC BY 3.0. Data by OpenStreetMap, under CC BY SA.",
+                scale = NULL, frame = TRUE,
+                col = "#688994") # color of the frame
+    
+}
+
     
