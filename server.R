@@ -947,21 +947,8 @@ shinyServer(function(input, output, session) {
         return((div(HTML(lapply(blob, paste)),class="shiny-html-output")))
     })
 
-output$populationmaps <- renderUI({
-    
-    
-    library(cartography)
-    library(sp)
-    
-    
-    plot_output_list <- lapply(unique(BRICS$system), function(sysname) {
-        plotname <- paste("map", sysname, sep="")
-        fluidRow(plotOutput(plotname))
-    })
-    
-    do.call(tagList, plot_output_list)
-})    
-    observe({
+output$populationmaps <- renderPlot({
+
     maxyear <- BRICS %>%
         group_by(system) %>%
         summarise(yearmax = max(year))
@@ -969,41 +956,31 @@ output$populationmaps <- renderUI({
     lastPops <- BRICS %>%
         semi_join(maxyear, by= c("system",  "year" = "yearmax")) %>%
         filter(pop > 10E3, !is.na(pop))
+
+    maxPop <- max(lastPops$pop)
+    currentPops <- as.data.frame(lastPops %>% filter(system == input$countryMap), stringsAsFactors = FALSE)
     
-    for (sysname in unique(BRICS$system)) {
-        # Need local so that each item gets its own number. Without it, the value
-        # of i in the renderPlot() will be the same across all instances, because
-        # of when the expression is evaluated.
-        local({
-            currSys <- sysname
-            plotname <- paste("map", currSys, sep="")
-            
-            output[[plotname]] <- renderPlot({
-                currentPops <- as.data.frame(lastPops %>% filter(system == currSys), stringsAsFactors = FALSE)
-                
-                coordinates(currentPops) <- ~Long+Lat
-                proj4string(currentPops) <- CRS("+init=epsg:4326")
-                baseMap <- getTiles(spdf = currentPops, type = "osm")
-                fluidRow()
-                tilesLayer(baseMap)
-                
-                propSymbolsLayer(spdf = currentPops, # SpatialPolygonsDataFrame of the countries
-                                 df = currentPops@data,  # data frame of the regions
-                                 var = "pop",  # population
-                                 symbols = "circle", # type of symbol
-                                 border = "white", # color of the symbols borders
-                                 lwd = 1.5, # width of the symbols borders
-                                 legend.pos = "topleft", 
-                                 legend.title.txt = "Total population")
-                # Layout plot
-                layoutLayer(title = sprintf("Cities in %s", currentSys),
-                            author = "Base map: Map tiles by OSM, under CC BY 3.0. Data by OpenStreetMap, under CC BY SA.",
-                            scale = NULL, frame = TRUE,
-                            col = "#688994") # color of the frame
-            })
-        })
-    }
-})
+    coordinates(currentPops) <- ~Long+Lat
+    proj4string(currentPops) <- CRS("+init=epsg:4326")
+    baseMap <- getTiles(spdf = currentPops, type = "osm")
+    fluidRow()
+    tilesLayer(baseMap)
+    
+    propSymbolsLayer(spdf = currentPops, # SpatialPolygonsDataFrame of the countries
+                     df = currentPops@data,  # data frame of the regions
+                     var = "pop",  # population
+                     fixmax = maxPop, # for comparability
+                     symbols = "circle", # type of symbol
+                     border = "white", # color of the symbols borders
+                     lwd = 0.1, # width of the symbols borders
+                     legend.pos = "topleft", 
+                     legend.title.txt = "Total population")
+    # Layout plot
+    layoutLayer(title = sprintf("Cities in %s", input$countryMap),
+                author = "Base map: Map tiles by OSM, under CC BY 3.0. Data by OpenStreetMap, under CC BY SA.",
+                scale = NULL, frame = TRUE,
+                col = "#688994") # color of the frame
+    })
     
     updateInputs <- function(session, columns, realColumns){        
         updateSelectInput(session=session, inputId="timeColumnSelected",

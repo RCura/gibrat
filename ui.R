@@ -121,7 +121,9 @@ shinyUI(
                                      fluidRow(tableOutput('numCitiesAppeared')),
                                      fluidRow(tableOutput('popCitiesAppeared'))),
                             tabPanel("Maps",
-                                     uiOutput("populationmaps"))
+                                     selectInput("countryMap",label = "Select system",
+                                                 choices = c("South Africa", "Brazil", "Former USSR", "India", "China", "USA", "Europe")),
+                                     plotOutput("populationmaps"))
                         )
                         )
                

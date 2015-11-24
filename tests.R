@@ -525,6 +525,7 @@ layout.show(n = 7)
 
 systemOrder <- c("Europe", "Brazil", "South Africa", "USA", "Former USSR", "China", "India")
 
+maxPop <- max(lastPops$pop)
 for (currentSys in systemOrder){
     currentPops <- as.data.frame(lastPops %>% filter(system == currentSys), stringsAsFactors = FALSE)
     ## On converti en SPDF
@@ -537,9 +538,10 @@ for (currentSys in systemOrder){
     propSymbolsLayer(spdf = currentPops, # SpatialPolygonsDataFrame of the countries
                      df = currentPops@data,  # data frame of the regions
                      var = "pop",  # population
+                     fixmax = maxPop, # for comparability
                      symbols = "circle", # type of symbol
                      border = "white", # color of the symbols borders
-                     lwd = 1.5, # width of the symbols borders
+                     lwd = 0.5, # width of the symbols borders
                      legend.pos = "topleft", 
                      legend.title.txt = "Total population")
     # Layout plot
@@ -550,6 +552,8 @@ for (currentSys in systemOrder){
     
 }
 
+
+####### New Pops / Cities tables ######
 currSys <- "China"
 
 currentWideDF <- BRICS %>% filter(system == currSys) %>% select(ID, year, pop) %>% tidyr::spread(year, pop)
