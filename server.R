@@ -745,7 +745,7 @@ shinyServer(function(input, output, session) {
             geom_point(colour = "black",  alpha =  0.2,  fill = "firebrick1") +
             scale_x_log10(breaks=breaks, labels=labels) +
             scale_y_log10(breaks=breaks, labels=labels) +
-            geom_text(data = countriesR2, aes(x = minValue, y = minValue, label = r2)) + 
+            geom_text(data = countriesR2, aes_string(x = minValue, y = minValue, label = "r2")) + 
             facet_wrap(~sysYear, scales = "fixed", ncol = 7) + 
             ggtitle("Normal Q-Q plot\n(log(Populations (Χ₀ =  10E3)))") +
             theme_bw() +
