@@ -738,7 +738,7 @@ shinyServer(function(input, output, session) {
         breaks <- c(1, 15000 ,90000, 990000, 9990000)
         labels <- c("10 000", "25 000", "100 000", "1E6", "10E6")
         
-        minValue <- min(xyDF$x, xyDF$y)
+        minValue <- min(xyDF$x, xyDF$y, na.rm = TRUE)
         
         ggplot(data = xyDF, aes(x=x, y=y)) +
             geom_smooth(method="lm", level=0.5, size=1.5, colour="cornflowerblue") +
