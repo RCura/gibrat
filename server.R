@@ -1522,7 +1522,7 @@ shinyServer(function(input, output, session) {
             )
             # Layout plot
             layoutLayer(
-                title = sprintf("Cities in %s", input$countryMap),
+                title = sprintf("Cities in %s", currentCountry),
                 author = "Base map: Map tiles by OSM, under CC BY 3.0. Data by OpenStreetMap, under CC BY SA.",
                 scale = NULL,
                 frame = TRUE,
