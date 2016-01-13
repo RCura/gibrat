@@ -1,7 +1,6 @@
 library(shiny)
 
 shinyUI(
-    
     navbarPage("Zipf",
                header = tags$head(includeScript("www/analytics.js")),
                position = "static-top",
