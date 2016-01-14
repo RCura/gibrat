@@ -120,8 +120,16 @@ shinyUI(
                                      fluidRow(tableOutput('numCitiesAppeared')),
                                      fluidRow(tableOutput('popCitiesAppeared'))),
                             tabPanel("Maps",
-                                     selectInput("countryMap",label = "Select system",
-                                                 choices = c("South Africa", "Brazil", "Former USSR", "India", "China", "USA", "Europe")),
+                                     fluidRow(
+                                         
+                                         column(5, selectInput("countryMap",
+                                                               label = "Select system",
+                                                               choices = c("South Africa", "Brazil", "Former USSR", "India", "China", "USA", "Europe"))),
+                                         column(5, sliderInput("symbolSize",
+                                                               label = "Points size (% of the map)",
+                                                               min=0.0, max = 0.1, step = 0.001, value = 0.05)),
+                                         column(2, downloadButton("mapDl", label = "Download map"))
+                                     ),
                                      plotOutput("populationmaps"))
                         )
                         )
