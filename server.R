@@ -1459,7 +1459,8 @@ shinyServer(function(input, output, session) {
                         xtable(growthratetable, caption = paste("System:", currSys)),
                         type = "html",
                         html.table.attributes = 'class="data table table-bordered table-condensed"',
-                        caption.placement = "top"
+                        caption.placement = "top",
+                        print.results = FALSE
                     )
             }
             return((div(HTML(
