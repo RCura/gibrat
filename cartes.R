@@ -1,3 +1,15 @@
+library(maps)
+library(cartography)
+library(dplyr)
+
+currentCountry <- "Former USSR"
+# Europe
+# USA
+# India
+# China
+# Brazil
+# South Africa
+
 maxyear <- BRICS %>%
     group_by(system) %>%
     summarise(yearmax = max(year))
@@ -10,52 +22,57 @@ lastPops <- BRICS %>%
 
 maxPop <- max(lastPops$pop)
 
-currentCountry <- "Former USSR"
 
-currentPops <-
-    as.data.frame(lastPops %>%filter(system == currentCountry),
-                  stringsAsFactors = FALSE)
+currentPops <- as.data.frame(lastPops %>%filter(system == currentCountry),
+                             stringsAsFactors = FALSE)
 
-coordinates(currentPops) <- ~ Long + Lat
-proj4string(currentPops) <- CRS("+init=epsg:4326")
-pdf(file = paste(currentCountry,  ".pdf", sep=""), paper = "a4r")
+
+mapString <- currentCountry
+
+maxLat <- max(currentPops$Lat, na.rm = TRUE)
+minLat <- min(currentPops$Lat, na.rm = TRUE)
+
+# projCoords <- mapproj::mapproject(x = currentPops$Long,
+#                                   y = currentPops$Lat,
+#                                   projection = "lambert",
+#                                   parameters = c(minLat, maxLat))
+# 
+# currentPops$projLong <- projCoords$x 
+# currentPops$projLat <- projCoords$y
+# 
+# coordinates(currentPops) <- ~ projLong + projLat
+coordinates(currentPops) <- ~Long + Lat
+
+#projString <- sprintf("+proj=lcc +lat_1=%s +lat_0=%s +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs", maxLat, minLat)
+projString <- "+init=epsg:4326"
+proj4string(currentPops) <- CRS(projString)
+
+
 
 if (currentCountry == "Former USSR") {
-    map(regions="Georgia|Armenia|Azerbaijan|Belarus|Estonia|Kazakhstan|Kyrgyzstan|Latvia|Lithuania|Moldavia|Russia|Tajikistan|Turkmenistan|Ukraine|Uzbekistan")
+    mapString <- "Georgia|Armenia|Azerbaijan|Belarus|Estonia|Kazakhstan|Kyrgyzstan|Latvia|Lithuania|Moldavia|Russia|Tajikistan|Turkmenistan|Ukraine|Uzbekistan"
 } else if (currentCountry == "USA") {
-    map(regions = "USA(?!:(Alaska|Hawaii))")
+    mapString <- "USA(?!:(Alaska|Hawaii))"
 } else if (currentCountry == "Europe") {
-    map(regions = "France|Austria|Belgium|Bulgaria|Switzerland|Cyprus|Czech|Germany|Denmark|Estonia|Spain|Finland|Greece|Croatia|Hungary|^Ireland|Italy|Lithuania|Luxembourg|Latvia|Malta|Netherlands|Poland|Portugal|Romania|Sweden|Slovenia|Slovakia|UK:")
+    mapString <- "France|Austria|Belgium|Bulgaria|Switzerland|Cyprus|Czech|Germany|Denmark|Estonia|Spain|Finland|Greece|Croatia|Hungary|^Ireland|Italy|Lithuania|Luxembourg|Latvia|Malta|Netherlands|Poland|Portugal|Romania|Sweden|Slovenia|Slovakia|UK:"
 } else if (currentCountry == "South Africa"){
-    map(regions = "South Africa(?!:)")
-} else {
-    map(regions = currentCountry)
+    mapString <- "South Africa(?!:)"
 }
 
+pdf(file = paste(currentCountry, ".pdf", sep=""),   paper = "a4r")
+
+#map(regions = mapString, projection = "lambert", param=c(minLat, maxLat))
+map(regions = mapString)
+
 propSymbolsLayer(
-    spdf = currentPops,
-    # SpatialPolygonsDataFrame of the countries
-    df = currentPops@data,
-    # data frame of the regions
-    var = "pop",
-    # population
-    fixmax = maxPop,
-    # for comparability
-    symbols = "circle",
-    # type of symbol
-    border = "white",
-    # color of the symbols borders
-    lwd = 0.1,
-    # width of the symbols borders
-    legend.pos = "topleft",
-    legend.title.txt = "Total population"
+    spdf = currentPops, df = currentPops@data, var = "pop",
+    fixmax = maxPop, symbols = "circle", border = "white",
+    lwd = 0.1, legend.pos = "topleft", legend.title.txt = "Total population"
 )
-# Layout plot
+
 layoutLayer(
-    title = sprintf("Cities in %s", currentCountry),
-    scale = 0,
-    frame = TRUE,
-    col = "#688994"
-) # color of the frame
+    title = sprintf("Cities in %s", currentCountry), author = "", sources = "",
+    scale = 0, frame = TRUE, col = "#688994"
+)
 
 dev.off()

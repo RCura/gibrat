@@ -1488,21 +1488,8 @@ shinyServer(function(input, output, session) {
             
             mapString <- currentCountry
             
-            maxLat <- max(currentPops$Lat, na.rm = TRUE)
-            minLat <- min(currentPops$Lat, na.rm = TRUE)
-
-            projCoords <- mapproj::mapproject(x = currentPops$Long,
-                                        y = currentPops$Lat,
-                                        projection = "lambert",
-                                        parameters = c(minLat, maxLat))
-            
-            currentPops$projLong <- projCoords$x 
-            currentPops$projLat <- projCoords$y
-            
-            coordinates(currentPops) <- ~ projLong + projLat
-           
-            #projString <- sprintf("+proj=lcc +lat_1=%s +lat_0=%s +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs", maxLat, minLat)
-            #proj4string(currentPops) <- CRS(projString)
+            coordinates(currentPops) <- ~ Long + Lat
+            proj4string(currentPops) <- CRS("+init=epsg:4326")
            
             
             
@@ -1516,7 +1503,7 @@ shinyServer(function(input, output, session) {
                 mapString <- "South Africa(?!:)"
             }
             
-            map(regions = mapString, projection = "lambert", param=c(minLat, maxLat))
+            map(regions= mapString)
             
             propSymbolsLayer(
                 spdf = currentPops,
