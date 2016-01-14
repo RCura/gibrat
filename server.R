@@ -1390,7 +1390,7 @@ shinyServer(function(input, output, session) {
             blob <- list()
             for (currSys in unique(BRICS$system)) {
                 currentWideDF <-
-                    BRICS %>% filter(system == currSys, pop > 10E3) %>% select(ID, year, pop) %>% tidyr::spread(year, pop)
+                    BRICS %>% filter(system == currSys, pop > 10E3) %>% dplyr::select(ID, year, pop) %>% tidyr::spread(year, pop)
                 resultWideDF <- currentWideDF
                 resultWideDF[, ] <- NA
                 for (currRow in 1:nrow(currentWideDF)) {
