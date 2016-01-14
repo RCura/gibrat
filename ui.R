@@ -116,9 +116,7 @@ shinyUI(
                                      fluidRow(plotOutput("sysZipfEvolution")),
                                      fluidRow(plotOutput("sysZipfLast"))),
                             tabPanel("Databases completeness",
-                                     uiOutput("relativesSharesApported"),
-                                     fluidRow(tableOutput('numCitiesAppeared')),
-                                     fluidRow(tableOutput('popCitiesAppeared'))),
+                                     uiOutput("relativesSharesApported")),
                             tabPanel("Maps",
                                      fluidRow(
                                          
@@ -127,7 +125,7 @@ shinyUI(
                                                                choices = c("South Africa", "Brazil", "Former USSR", "India", "China", "USA", "Europe"))),
                                          column(5, sliderInput("symbolSize",
                                                                label = "Points size (% of the map)",
-                                                               min=0.0, max = 0.1, step = 0.001, value = 0.05)),
+                                                               min=0.0, max = 0.1, step = 0.001, value = 0.01)),
                                          column(2, downloadButton("mapDl", label = "Download map"))
                                      ),
                                      plotOutput("populationmaps"))
