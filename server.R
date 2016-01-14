@@ -1482,25 +1482,41 @@ shinyServer(function(input, output, session) {
             
             currentCountry <- input$countryMap 
             
-            currentPops <-
-                as.data.frame(lastPops %>%filter(system == currentCountry),
+            currentPops <- as.data.frame(lastPops %>%filter(system == currentCountry),
                               stringsAsFactors = FALSE)
             
-            coordinates(currentPops) <- ~ Long + Lat
-            proj4string(currentPops) <- CRS("+init=epsg:4326")
+            
+            mapString <- currentCountry
+            
+            maxLat <- max(currentPops$Lat, na.rm = TRUE)
+            minLat <- min(currentPops$Lat, na.rm = TRUE)
 
+            projCoords <- mapproj::mapproject(x = currentPops$Long,
+                                        y = currentPops$Lat,
+                                        projection = "lambert",
+                                        parameters = c(minLat, maxLat))
+            
+            currentPops$projLong <- projCoords$x 
+            currentPops$projLat <- projCoords$y
+            
+            coordinates(currentPops) <- ~ projLong + projLat
+           
+            #projString <- sprintf("+proj=lcc +lat_1=%s +lat_0=%s +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs", maxLat, minLat)
+            #proj4string(currentPops) <- CRS(projString)
+           
+            
             
             if (currentCountry == "Former USSR") {
-                map(regions="Georgia|Armenia|Azerbaijan|Belarus|Estonia|Kazakhstan|Kyrgyzstan|Latvia|Lithuania|Moldavia|Russia|Tajikistan|Turkmenistan|Ukraine|Uzbekistan")
+                mapString <- "Georgia|Armenia|Azerbaijan|Belarus|Estonia|Kazakhstan|Kyrgyzstan|Latvia|Lithuania|Moldavia|Russia|Tajikistan|Turkmenistan|Ukraine|Uzbekistan"
             } else if (currentCountry == "USA") {
-                map(regions = "USA(?!:(Alaska|Hawaii))")
+                mapString <- "USA(?!:(Alaska|Hawaii))"
             } else if (currentCountry == "Europe") {
-                map(regions = "France|Austria|Belgium|Bulgaria|Switzerland|Cyprus|Czech|Germany|Denmark|Estonia|Spain|Finland|Greece|Croatia|Hungary|^Ireland|Italy|Lithuania|Luxembourg|Latvia|Malta|Netherlands|Poland|Portugal|Romania|Sweden|Slovenia|Slovakia|UK:")
+                mapString <- "France|Austria|Belgium|Bulgaria|Switzerland|Cyprus|Czech|Germany|Denmark|Estonia|Spain|Finland|Greece|Croatia|Hungary|^Ireland|Italy|Lithuania|Luxembourg|Latvia|Malta|Netherlands|Poland|Portugal|Romania|Sweden|Slovenia|Slovakia|UK:"
             } else if (currentCountry == "South Africa"){
-                map(regions = "South Africa(?!:)")
-            } else {
-                map(regions = currentCountry)
+                mapString <- "South Africa(?!:)"
             }
+            
+            map(regions = mapString, projection = "lambert", param=c(minLat, maxLat))
             
             propSymbolsLayer(
                 spdf = currentPops,
@@ -1523,11 +1539,13 @@ shinyServer(function(input, output, session) {
             # Layout plot
             layoutLayer(
                 title = sprintf("Cities in %s", currentCountry),
-                author = "Base map: Map tiles by OSM, under CC BY 3.0. Data by OpenStreetMap, under CC BY SA.",
+                author = "",
+                sources = "",
                 scale = NULL,
                 frame = TRUE,
                 col = "#688994"
             ) # color of the frame
+            
         })
         
         updateInputs <- function(session, columns, realColumns) {
