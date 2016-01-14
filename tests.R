@@ -614,7 +614,7 @@ growthratetable
 
 ############ REPLACE CHINA ##############
 China <- read.csv(file = "data/CN8210All10.csv", sep = ";", stringsAsFactors = FALSE, check.names = FALSE)
-
+China$system <- "China"
 BRICS <- BRICS %>% filter(system != "China")
 
 ChinaLong <- China %>%
