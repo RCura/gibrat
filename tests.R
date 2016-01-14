@@ -609,3 +609,19 @@ for (i in (2:nrow(baseDF))){
 growthratetable
 rownames(growthratetable) <- c("New Cities",  "% new cities", "New Pop", "% new pop")
 growthratetable
+
+
+
+############ REPLACE CHINA ##############
+China <- read.csv(file = "data/CN8210All10.csv", sep = ";", stringsAsFactors = FALSE, check.names = FALSE)
+
+BRICS <- BRICS %>% filter(system != "China")
+
+ChinaLong <- China %>%
+    gather(year, pop,  `1982`:`2010`) %>%
+    mutate(year=as.integer(as.character(year)))
+glimpse(ChinaLong)
+
+BRICS <- BRICS %>%
+    bind_rows(ChinaLong)
+rm(ChinaLong)
