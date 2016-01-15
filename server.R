@@ -1517,7 +1517,7 @@ shinyServer(function(input, output, session) {
                 frame = TRUE, col = "#688994"
             )
             
-        })
+        }, height = 800)
         
         output$mapDl <- downloadHandler(
             filename = function() {
