@@ -617,6 +617,10 @@ China <- read.csv(file = "data/CN8210All10.csv", sep = ";", stringsAsFactors = F
 China$system <- "China"
 BRICS <- BRICS %>% filter(system != "China")
 
+Chine_Trajpop_old <- read.csv("D:/repositories/gibrat/data/Chine_Trajpop_old.csv", stringsAsFactors=FALSE, check.names = FALSE)
+
+
+
 ChinaLong <- China %>%
     gather(year, pop,  `1982`:`2010`) %>%
     mutate(year=as.integer(as.character(year)))
@@ -625,3 +629,13 @@ glimpse(ChinaLong)
 BRICS <- BRICS %>%
     bind_rows(ChinaLong)
 rm(ChinaLong)
+
+China_Historic <- read.csv("data/Chine1964_2010.csv", stringsAsFactors = FALSE, check.names = FALSE, sep=";")
+China_Historic$system <- "China (Historical)"
+ChinaLong2 <- China_Historic %>%
+    gather(year, pop, `1964`:`2010`) %>%
+    mutate(year=as.integer(as.character(year)))
+glimpse(ChinaLong2)
+
+BRICS <- BRICS %>%
+    bind_rows(ChinaLong2)

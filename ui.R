@@ -10,7 +10,7 @@ shinyUI(
                             sidebarPanel(
                                 selectInput(inputId = 'dataset', label = "Choose country",
                                             multiple = FALSE,
-                                            choices = c("South Africa", "Brazil", "Russia", "India", "China", "USA", "Europe")),
+                                            choices = c("South Africa", "Brazil", "Russia", "India", "China", "China (Historical)", "USA", "Europe")),
                                 tags$hr(),
                                 selectInput("timeColumnSelected", "Time columns :",choices="", multiple=TRUE, selectize=TRUE)
                                 
@@ -122,7 +122,7 @@ shinyUI(
                                          
                                          column(5, selectInput("countryMap",
                                                                label = "Select system",
-                                                               choices = c("South Africa", "Brazil", "Former USSR", "India", "China", "USA", "Europe"))),
+                                                               choices = c("South Africa", "Brazil", "Former USSR", "India", "China", "China (Historical)", "USA", "Europe"))),
                                          column(5, sliderInput("symbolSize",
                                                                label = "Points size (% of the map)",
                                                                min=0.0, max = 0.1, step = 0.001, value = 0.01)),

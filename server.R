@@ -12,6 +12,7 @@ library(xtable)
 library(sp)
 library(cartography)
 library(maps)
+library(markdown)
 
 shinyServer(function(input, output, session) {
     #options(warn=0, error=browser, shiny.error=browser)
@@ -60,6 +61,8 @@ shinyServer(function(input, output, session) {
             dataValues$rawDF <- India
         }  else if (countryName ==  "China") {
             dataValues$rawDF <- China
+        } else if (countryName == "China (Historical)"){
+            dataValues$rawDF <- China_Historic  
         } else  if (countryName ==  "South Africa") {
             dataValues$rawDF <- SouthAfrica
         } else if (countryName ==  "USA") {
@@ -1463,9 +1466,8 @@ shinyServer(function(input, output, session) {
                         print.results = FALSE
                     )
             }
-            return((div(HTML(
-                lapply(blob, paste)
-            ), class = "shiny-html-output")))
+            #browser()
+            return(div(HTML(unlist(blob)),class = "shiny-html-output"))
         })
         
         output$populationmaps <- renderPlot({
