@@ -1321,7 +1321,7 @@ shinyServer(function(input, output, session) {
                 scale_alpha(range = c(0.1, 1)) +
                 scale_y_log10() +
                 scale_x_log10() +
-                facet_wrap( ~ system, scales = "fixed", ncol = 3) +
+                facet_wrap( ~ system, scales = "fixed", ncol = 2) +
                 labs(title = "Rank-Size evolution",
                      x = "Rank",
                      y = "Population") +
@@ -1332,7 +1332,7 @@ shinyServer(function(input, output, session) {
         output$sysZipfEvolution <- renderPlot({
             sysZipfEvolution <- sysZipfEvolutionPlot()
             print(sysZipfEvolution)
-        })
+        }, height = 800)
         
         output$zipfEvolDl <- downloadHandler(
             filename = function() {

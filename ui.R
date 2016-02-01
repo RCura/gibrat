@@ -113,8 +113,9 @@ shinyUI(
                             tabPanel("Zipf curves",
                                      fluidRow(downloadButton('zipfEvolDl', 'Download evolution plots'),
                                               downloadButton('zipfLastDl', 'Download final date plot')),
-                                     fluidRow(plotOutput("sysZipfEvolution")),
-                                     fluidRow(plotOutput("sysZipfLast"))),
+                                    plotOutput("sysZipfEvolution", height=800),
+                                    plotOutput("sysZipfLast")
+                                     ),
                             tabPanel("Databases completeness",
                                      uiOutput("relativesSharesApported")),
                             tabPanel("Maps",
