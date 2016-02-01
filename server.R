@@ -1502,6 +1502,8 @@ shinyServer(function(input, output, session) {
                 mapString <- "France|Austria|Belgium|Bulgaria|Switzerland|Cyprus|Czech|Germany|Denmark|Estonia|Spain|Finland|Greece|Croatia|Hungary|^Ireland|Italy|Lithuania|Luxembourg|Latvia|Malta|Netherlands|Poland|Portugal|Romania|Sweden|Slovenia|Slovakia|UK:"
             } else if (currentCountry == "South Africa"){
                 mapString <- "South Africa(?!:)"
+            } else if (currentCountry == "China (Historical)"){
+                mapString <- "China"
             }
             
             map(regions= mapString)
