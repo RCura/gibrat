@@ -1,10 +1,12 @@
 library(shiny)
+library(shinyURL)
 
 shinyUI(
-    navbarPage("Zipf",
+    navbarPage("Zipf",id = "zipf",
                header = tags$head(includeScript("www/analytics.js")),
                position = "static-top",
                inverse = TRUE,
+               #shinyURL.ui(),
                tabPanel("Urban system scale",
                         sidebarLayout(
                             sidebarPanel(
@@ -16,7 +18,7 @@ shinyUI(
                                 
                             ),
                             mainPanel(
-                                tabsetPanel(
+                                tabsetPanel(id="mainPanel",
                                     tabPanel("Base data", DT::dataTableOutput('data')),
                                     tabPanel("Top 10", DT::dataTableOutput('top10')),
                                     tabPanel("City Size Classes", 
@@ -102,7 +104,7 @@ shinyUI(
                         )    
                ),
                tabPanel("System comparison",
-                        tabsetPanel(
+                        tabsetPanel(id="sysComp",
                             tabPanel("LogNormality",
                                      fluidRow(downloadButton('histDl', "Download histograms"),
                                               downloadButton('qqDl', "Download qqplots")),

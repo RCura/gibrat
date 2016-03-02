@@ -14,7 +14,10 @@ library(cartography)
 library(maps)
 library(markdown)
 
+library(shinyURL)
+
 shinyServer(function(input, output, session) {
+    shinyURL.server()
     #options(warn=0, error=browser, shiny.error=browser)
     load("data/countriesPop.RData")
     
