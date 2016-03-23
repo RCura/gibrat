@@ -1,3 +1,6 @@
 .Rproj.user
 .Rhistory
 .RData
+production_graphiques_article_cache/*
+production_graphiques_article_files/*
+*.pdf
