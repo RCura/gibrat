@@ -1,0 +1,128 @@
+---
+output: 
+  pdf_document: 
+    fig_height: 5
+    fig_width: 8.5
+---
+
+```{r options, echo=FALSE}
+library(knitr)
+opts_chunk$set(cache=TRUE, echo=FALSE, warning =  FALSE, message= FALSE)
+```
+
+```{r pkgs, echo = FALSE}
+library(shiny)
+library(ggplot2)
+library(MASS)
+library(poweRlaw)
+library(DT)
+library(reshape2)
+library(dplyr)
+library(parallel)
+library(moments)
+library(xtable)
+
+library(sp)
+library(cartography)
+library(maps)
+library(markdown)
+
+library(ggthemes)
+library(scales)
+library(ggrepel)
+
+load("data/countriesPop.RData")
+```
+
+
+Évolution des rangs-tailles
+```{r prepRT1, echo =FALSE, }
+rtBRICS <- BRICS %>%
+    filter(pop > 10E3, !is.na(pop))%>%
+    group_by(system, year) %>%
+  mutate(Rank = row_number(desc(pop)))
+```
+
+```{r format_si}
+format_si <- function(...) {
+  function(x) {
+    limits <- c(1e-24, 1e-21, 1e-18, 1e-15, 1e-12,
+                1e-9,  1e-6,  1e-3,  1e0,   1e3,
+                1e6,   1e9,   1e12,  1e15,  1e18,
+                1e21,  1e24)
+    prefix <- c("y",   "z",   "a",   "f",   "p",
+                "n",   "µ",   "m",   " ",   "k",
+                "M",   "G",   "T",   "P",   "E",
+                "Z",   "Y")
+    # Vector with array indices according to position in intervals
+    i <- findInterval(abs(x), limits)
+ 
+    # Set prefix to " " for very small values < 1e-24
+    i <- ifelse(i==0, which(limits == 1e0), i)
+
+    paste(format(round(x/limits[i], 1),
+                 trim=TRUE, scientific=FALSE, ...),
+          prefix[i])
+  }
+}
+```
+
+
+```{r RT_Evol}
+
+base_breaks <- function(n = 20){
+    function(x) {
+        axisTicks(log10(range(x, na.rm = TRUE)), log = TRUE, n = n)
+    }
+}
+
+ggplot(rtBRICS, aes(Rank, pop, group=year, colour=year, alpha=year)) +
+    geom_line(size=0.1) +
+    geom_point(size=0.1) +
+    scale_colour_gradient(name = "Year", low = "lightgrey", high = "black")+
+    scale_alpha_continuous(name = "Year",range= c(0.4, 1), guide = FALSE) +
+    facet_wrap(~system, scale="free_x") +
+    scale_x_log10() + scale_y_log10(labels = format_si()) +
+    ggtitle("Rank-Size of systems across time ") +
+    xlab("Rank") +
+    ylab("Population")+
+    theme_tufte()+
+    theme(legend.position="bottom",
+          legend.text = element_text(angle = 45, hjust = 1),
+          #legend.title = element_blank(),
+          legend.key.width=unit(2,"cm"),
+          panel.margin = unit(0.1, "lines"))
+```
+
+Comparaison des rangs-tailles
+
+```{r prepRT2}
+maxyear <- BRICS %>%
+    group_by(system) %>%
+    summarise(yearmax = max(year))
+
+rtLastPops <- BRICS %>%
+    semi_join(maxyear, by = c("system",  "year" = "yearmax")) %>%
+    filter(pop > 10E3,!is.na(pop)) %>%
+    group_by(system, year) %>%
+  mutate(Rank = row_number(desc(pop)))
+```
+
+```{r RT_Tous}
+ggplot(rtLastPops, aes(Rank, pop, group=system, colour=system, linetype = system)) +
+    geom_line(size=0.5) +
+    scale_color_grey(start = 0.25, end = 0.5, guide = FALSE) +
+    scale_linetype_discrete(name = "System",  guide =  FALSE) +
+    scale_x_log10(breaks=base_breaks(), labels = format_si()) + scale_y_log10(breaks=base_breaks(), labels = format_si()) +
+    ggtitle("Rank-Size of systems at last census date ") +
+    xlab("Rank") +
+    ylab("Population")+
+    theme_tufte()+
+    geom_label_repel(
+        data = filter(rtLastPops, Rank == max(Rank)),
+        aes(label = system),
+        size = 3,
+        segment.color = "black",segment.size = 0.2
+    )
+```
+
