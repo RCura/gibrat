@@ -1,5 +1,5 @@
 library(shiny)
-library(shinyURL)
+#library(shinyURL)
 
 shinyUI(
     navbarPage("Zipf",id = "zipf",
