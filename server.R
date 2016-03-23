@@ -1116,7 +1116,7 @@ shinyServer(function(input, output, session) {
                     size = 1.5
                 ) +
                 scale_x_continuous(breaks = breaks, labels = labels) +
-                facet_wrap( ~ sysYear, scales = "fixed", ncol = 7) +
+                facet_wrap( ~ sysYear, scales = "fixed", nrow = 2) +
                 ggtitle("log(Populations) histograms\n((Χ₀ =  10E3))") +
                 theme_bw() +
                 theme(strip.text = element_text(size = 14)) +
@@ -1211,7 +1211,7 @@ shinyServer(function(input, output, session) {
                     y = minValue,
                     label = "r2"
                 )) +
-                facet_wrap( ~ sysYear, scales = "fixed", ncol = 7) +
+                facet_wrap( ~ sysYear, scales = "fixed",nrow = 2) +
                 ggtitle("Normal Q-Q plot\n(log(Populations (Χ₀ =  10E3)))") +
                 theme_bw() +
                 theme(strip.text = element_text(size = 14)) +
