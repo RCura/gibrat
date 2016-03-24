@@ -61,9 +61,8 @@ theme_gibratdc <- function(base_size = 11, base_family = "serif", ticks = TRUE) 
 }
 ```
 
-
 Évolution des rangs-tailles
-```{r prepRT1, echo =FALSE, }
+```{r prepRT_Evol, echo =FALSE, }
 rtBRICS <- BRICS %>%
     filter(pop > 10E3, !is.na(pop))%>%
     group_by(system, year) %>%
@@ -95,7 +94,7 @@ format_si <- function(...) {
 ```
 
 
-```{r RT_Evol}
+```{r plotRT_Evol}
 
 base_breaks <- function(n = 20){
     function(x) {
@@ -108,8 +107,8 @@ ggplot(rtBRICS, aes(Rank, pop, group=year, colour=year, alpha=year)) +
     geom_point(size=0.1) +
     scale_colour_gradient(name = "Year", low = "lightgrey", high = "black")+
     scale_alpha_continuous(name = "Year",range= c(0.4, 1), guide = FALSE) +
-    facet_wrap(~system, scale="free_x") +
-    scale_x_log10() + scale_y_log10(labels = format_si()) +
+    facet_wrap(~system, scale="free_x", nrow=2) +
+    scale_x_log10() + scale_y_log10(labels = format_si(), breaks = base_breaks(n=4)) +
     ggtitle("Rank-Size of systems across time ") +
     xlab("Rank") +
     ylab("Population")+
@@ -123,19 +122,21 @@ ggplot(rtBRICS, aes(Rank, pop, group=year, colour=year, alpha=year)) +
 
 Comparaison des rangs-tailles
 
-```{r prepRT2}
+```{r prepRT_Tous}
 maxyear <- BRICS %>%
     group_by(system) %>%
     summarise(yearmax = max(year))
 
-rtLastPops <- BRICS %>%
+lastPops <- BRICS %>%
     semi_join(maxyear, by = c("system",  "year" = "yearmax")) %>%
-    filter(pop > 10E3,!is.na(pop)) %>%
+    filter(pop > 10E3,!is.na(pop))
+
+rtLastPops <- lastPops %>%
     group_by(system, year) %>%
   mutate(Rank = row_number(desc(pop)))
 ```
 
-```{r RT_Tous}
+```{r plotRT_Tous}
 ggplot(rtLastPops, aes(Rank, pop, group=system, colour=system, linetype = system)) +
     geom_line(size=0.5) +
     scale_color_grey(start = 0.25, end = 0.5, guide = FALSE) +
@@ -150,6 +151,7 @@ ggplot(rtLastPops, aes(Rank, pop, group=system, colour=system, linetype = system
         aes(label = system),
         size = 3,
         segment.color = "black",segment.size = 0.2
-    )
+    ) +
+    theme(axis.line = element_line(colour = "black", size= 1, linetype= "solid"))
 ```
 
