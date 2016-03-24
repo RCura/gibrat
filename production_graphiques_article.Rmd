@@ -199,3 +199,23 @@ customBreaks <- log10(c(10,15E3, 90E3, 990E3, 9990E3))
               left = "Density",
               nrow=1)
 ```
+
+```{r plotQQ}
+ qqPlots <- lapply(split(histLastPops,histLastPops$sysYear),FUN=function(state_slice){ 
+     ggplot(state_slice, aes(sample =  sklogpop)) + 
+         stat_qq(size=0.3, distribution = qnorm, dparams = list(
+                           mean=state_slice$meanLog[1],
+                           sd=state_slice$sdLog[1])) +
+         geom_abline(slope = 1) +
+         scale_x_continuous(name = "", labels = customLabels, breaks = customBreaks) +
+         scale_y_continuous(name = "", labels = customLabels, breaks = customBreaks) +
+         ggtitle(unique(state_slice$sysYear)) +
+         theme_gibratdc() +
+         theme(axis.title = element_blank())
+ })
+ 
+ grid.arrange(grobs = qqPlots, bottom = "Population (theoretical)",
+              left = "Population (observed)",
+              nrow=1)
+```
+
