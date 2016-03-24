@@ -155,3 +155,47 @@ ggplot(rtLastPops, aes(Rank, pop, group=system, colour=system, linetype = system
     theme(axis.line = element_line(colour = "black", size= 1, linetype= "solid"))
 ```
 
+
+Histogrammes & QQplots
+
+```{r prepHisto}
+
+histLastPops <- lastPops %>%
+    filter(system %in% c("Brazil", "Europe", "India")) %>%
+    mutate(logpop = log10(pop)) %>%
+    mutate(sklogpop = log10(pop - 10E3)) %>%
+    mutate(skpop = pop - 10E3) %>%
+    filter(skpop > 1) %>%
+    group_by(system) %>%
+    mutate(meanLog = mean(sklogpop)) %>%
+    mutate(sdLog = sd(sklogpop))
+  
+logLabel <- function(x){
+   (10^x) + 10E3
+}
+```
+
+
+```{r plotHist}
+customBreaks <- log10(c(10,15E3, 90E3, 990E3, 9990E3))
+ customLabels <- format_si()(c(10E3, 25E3, 100E3, 1E6, 10E6))
+ 
+  histPlots <- lapply(split(histLastPops,histLastPops$sysYear),FUN=function(state_slice){ 
+     ggplot(state_slice, aes(sklogpop)) + 
+         geom_histogram(aes(y = ..density..), fill = 'grey70', colour = "grey75",  bins = 30) +
+         geom_density(color="grey10", size=0.2) +
+         stat_function(color="black", linetype = "dashed", size=0.3,fun=dnorm,
+                       args=list(
+                           mean=state_slice$meanLog[1],
+                           sd=state_slice$sdLog[1])) +
+         scale_x_continuous(name = "", labels = customLabels, breaks = customBreaks) +
+         scale_y_continuous(name="") +
+         ggtitle(unique(state_slice$sysYear)) +
+         theme_gibratdc() +
+         theme(axis.title = element_blank())
+ })
+ 
+ grid.arrange(grobs = histPlots, bottom = "Population",
+              left = "Density",
+              nrow=1)
+```
