@@ -111,7 +111,6 @@ ggplot(rtBRICS, aes(Rank, pop, group=year, colour=year, alpha=year)) +
     scale_alpha_continuous(name = "Year",range= c(0.4, 1), guide = FALSE) +
     facet_wrap(~system, scale="free_x", nrow=2) +
     scale_x_log10() + scale_y_log10(labels = format_si(), breaks = base_breaks(n=4)) +
-    ggtitle("Rank-Size of systems across time ") +
     xlab("Rank") +
     ylab("Population")+
     theme_gibratdc()+
@@ -144,7 +143,6 @@ ggplot(rtLastPops, aes(Rank, pop, group=system, colour=system, linetype = system
     scale_color_grey(start = 0.25, end = 0.5, guide = FALSE) +
     scale_linetype_discrete(name = "System",  guide =  FALSE) +
     scale_x_log10(breaks=base_breaks(), labels = format_si()) + scale_y_log10(breaks=base_breaks(), labels = format_si()) +
-    ggtitle("Rank-Size of systems at last census date ") +
     xlab("Rank") +
     ylab("Population")+
     theme_gibratdc()+
@@ -156,7 +154,6 @@ ggplot(rtLastPops, aes(Rank, pop, group=system, colour=system, linetype = system
     ) +
     theme(axis.line = element_line(colour = "black", size= 1, linetype= "solid"))
 ```
-
 
 # Histogrammes & QQplots
 
@@ -242,4 +239,45 @@ grid.arrange(tmp,
               left = "Population (observed)",
               nrow=1)
 ```
+
+# Simulations Gibrat
+
+```{r prep GibratSim}
+SouthAfrica <- readRDS("prod_data/South Africa.Rds")
+Brazil <- readRDS("prod_data/Brazil.Rds")
+Russia <- readRDS("prod_data/Russia.Rds")
+India <- readRDS("prod_data/India.Rds")
+China <- readRDS("prod_data/China (Historical).Rds")
+USA <- readRDS("prod_data/USA.Rds")
+Europe <- readRDS("prod_data/Europe.Rds")
+
+GibratResults <- SouthAfrica %>%
+    bind_rows(Brazil) %>%
+    bind_rows(Russia) %>%
+    bind_rows(India) %>%
+    bind_rows(China) %>%
+    bind_rows(USA) %>%
+    bind_rows(Europe) %>%
+    mutate(system = ifelse(system == "Russia", "Former USSR", system)) %>%
+    mutate(system = ifelse(system == "China (Historical)", "China", system))
+
+```
+
+```{r plot_GibratSim}
+ggplot(GibratResults, aes(x = Obs, y = Sim)) +
+    geom_point(size = 0.1, alpha = 0.1) +
+    geom_abline(slope = 1, linetype="dashed", col="black", size=0.2) +
+    facet_wrap(~system) +
+    scale_x_log10(labels = format_si(), breaks = base_breaks(n=4)) +
+    scale_y_log10(labels = format_si(), breaks = base_breaks(n=4)) +
+    xlab("Observed Population") +
+    ylab("Simulated Population") +
+    theme_gibratdc() +
+    theme(legend.position="bottom",
+      legend.text = element_text(angle = 45, hjust = 1),
+      legend.key.width=unit(2,"cm"),
+      panel.margin = unit(0.1, "lines"))
+
+```
+
 
