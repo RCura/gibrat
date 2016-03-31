@@ -230,7 +230,7 @@ grid.arrange(tmp,
          stat_qq(size=0.3, distribution = qnorm, dparams = list(
                            mean=state_slice$meanLog[1],
                            sd=state_slice$sdLog[1])) +
-         geom_abline(slope = 1) +
+         geom_abline(slope = 1, linetype="dashed", col="grey30") +
          scale_x_continuous(name = "", labels = customLabels, breaks = customBreaks) +
          scale_y_continuous(name = "", labels = customLabels, breaks = customBreaks) +
          ggtitle(unique(state_slice$sysYear)) +
