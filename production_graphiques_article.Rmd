@@ -202,9 +202,26 @@ customBreaks <- log10(c(10,15E3, 90E3, 990E3, 9990E3))
          theme(legend.key = element_rect(fill = "white", colour = "white"))
  })
  
- grid.arrange(grobs = histPlots, bottom = "Population",
-              left = "Density",
-              nrow=1)
+ # grid.arrange(grobs = histPlots, bottom = "Population",
+ #              left = "Density",
+ #              nrow=1)
+ 
+ #grid_arrange_shared_legend(histPlots[[1]], histPlots[[2]], histPlots[[3]])
+ 
+plots <- histPlots
+g <- ggplotGrob(plots[[1]] + theme(legend.position="bottom"))$grobs
+legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
+lheight <- sum(legend$height)
+tmp <- arrangeGrob(plots[[1]]+theme(legend.position = "none"),
+                   plots[[2]]+theme(legend.position = "none"),
+                   plots[[3]]+theme(legend.position = "none"),
+                   layout_matrix = matrix(c(1,2, 3), nrow = 1))
+grid.arrange(tmp,
+             legend,
+             ncol = 1,
+             heights = unit.c(unit(1, "npc") - lheight, 0.66*lheight),
+             bottom = "Population",
+             left = "Density")
 ```
 
 ```{r plotQQ}
