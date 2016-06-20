@@ -828,8 +828,8 @@ shinyServer(function(input, output, session) {
             geom_point(colour = "aquamarine3") + geom_line(colour = "aquamarine3", size = 2) +
             theme(axis.text = element_text(size = 12) ,
                    axis.title=element_text(size=14),
-                  axis.text.x = element_text(angle = 45, hjust = 1),
-                  ggtitle(paste("Zipf Plot in ", input$date, sep="")))
+                  axis.text.x = element_text(angle = 45, hjust = 1)) +
+            ggtitle(paste("Zipf Plot in ", input$date, sep=""))
     })
         
         
