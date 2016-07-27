@@ -104,21 +104,29 @@ base_breaks <- function(n = 20){
     }
 }
 
-ggplot(rtBRICS, aes(Rank, pop, group=year, colour=year, alpha=year)) +
+plotRT_Evol <- ggplot(rtBRICS %>% filter(system != "China (Historical)"), aes(Rank, pop, group=year, colour=year, alpha=year)) +
     geom_line(size=0.05) +
     geom_point(size=0.02) +
     scale_colour_gradient(name = "Year", low = "lightgrey", high = "black")+
-    scale_alpha_continuous(name = "Year",range= c(0.4, 1), guide = FALSE) +
+    scale_alpha_continuous(name = "Year",range= c(0.5, 1), guide = FALSE) +
     facet_wrap(~system, scale="free_x", nrow=2) +
-    scale_x_log10() + scale_y_log10(labels = format_si(), breaks = base_breaks(n=4)) +
+    scale_x_log10(breaks=c(1,10,100,1000,10000)) +
+    scale_y_log10(labels = format_si(), breaks = c(10E3, 100E3, 1E6, 10E6)) +
     xlab("Rank") +
     ylab("Population")+
     theme_gibratdc()+
     theme(legend.position="bottom",
           legend.text = element_text(angle = 45, hjust = 1),
           #legend.title = element_blank(),
-          legend.key.width=unit(2,"cm"),
-          panel.margin = unit(0.1, "lines"))
+          legend.key.width=unit(1,"cm"),
+          legend.key.height=unit(0.2, "cm"),
+          panel.margin = unit(0.1, "lines"),
+          axis.line.y = element_line(colour = "black", size = 0.3))
+
+ggsave(plot = plotRT_Evol,  filename = "plotRT_Evol-1.pdf", height = 3.5, width= 4.5,  units = "in")
+
+plotRT_Evol
+
 ```
 
 # Comparaison des rangs-tailles
@@ -138,21 +146,22 @@ rtLastPops <- lastPops %>%
 ```
 
 ```{r plotRT_Tous}
-ggplot(rtLastPops, aes(Rank, pop, group=system, colour=system, linetype = system)) +
+plotRT_Tous <- ggplot(rtLastPops %>% filter(system != "China (Historical)"), aes(Rank, pop, group=system, colour=system, linetype = system)) +
     geom_line(size=0.5) +
-    scale_color_grey(start = 0.25, end = 0.5, guide = FALSE) +
-    scale_linetype_discrete(name = "System",  guide =  FALSE) +
+    scale_color_grey(start = 0.25, end = 0.5,  name = "System") +
+    scale_linetype_discrete(name = "System") +
     scale_x_log10(breaks=base_breaks(), labels = format_si()) + scale_y_log10(breaks=base_breaks(), labels = format_si()) +
     xlab("Rank") +
     ylab("Population")+
-    theme_gibratdc()+
-    geom_label_repel(
-        data = filter(rtLastPops, Rank == max(Rank)),
-        aes(label = system),
-        size = 3,
-        segment.color = "black",segment.size = 0.2
-    ) +
-    theme(axis.line = element_line(colour = "black", size= 1, linetype= "solid"))
+    theme_gibratdc() +
+    theme(axis.line = element_line(colour = "black", size= 1, linetype= "solid")) +
+     theme(legend.justification=c(1,1), legend.position=c(1.05,1))
+
+
+ggsave(plot = plotRT_Tous,  filename = "plotRT_Tous-1.pdf", height = 3.5, width= 4.5,  units = "in")
+ggsave(plot = plotRT_Tous,  filename = "plotRT_Tous-1.tiff", height = 3.5, width= 4.5,  units = "in")
+
+plotRT_Tous
 ```
 
 # Histogrammes & QQplots
@@ -264,20 +273,48 @@ GibratResults <- SouthAfrica %>%
 ```
 
 ```{r plot_GibratSim}
-ggplot(GibratResults, aes(x = Obs, y = Sim)) +
-    geom_point(size = 0.1, alpha = 0.1) +
+plot_GibratSim <- ggplot(GibratResults, aes(x = Obs, y = Sim)) +
+    geom_point(size = 0.1, alpha = 0.15) +
     geom_abline(slope = 1, linetype="dashed", col="black", size=0.2) +
-    facet_wrap(~system) +
-    scale_x_log10(labels = format_si(), breaks = base_breaks(n=4)) +
-    scale_y_log10(labels = format_si(), breaks = base_breaks(n=4)) +
+    facet_wrap(~system, scales = "free") +
+    scale_x_log10(labels = format_si(), breaks = c(10E3, 100E3, 1E6, 10E6)) +
+    scale_y_log10(labels = format_si(), breaks = c(10E3, 100E3, 1E6, 10E6)) +
     xlab("Observed Population") +
     ylab("Simulated Population") +
     theme_gibratdc() +
     theme(legend.position="bottom",
       legend.text = element_text(angle = 45, hjust = 1),
       legend.key.width=unit(2,"cm"),
-      panel.margin = unit(0.1, "lines"))
+      panel.margin = unit(0.1, "lines"),
+      axis.text.x = element_text(angle=45, vjust=1, hjust = 1, size = 6),
+      axis.text.y = element_text(angle=45, vjust=1, hjust = 0.5, size = 6))
 
+ggsave(plot = plot_GibratSim,  filename = "plot_GibratSim-1.pdf", height = 3.5, width= 4.5,  units = "in")
+ggsave(plot = plot_GibratSim,  filename = "plot_GibratSim-1.tiff", height = 3.5, width= 4.5,  units = "in")
+
+plot_GibratSim
 ```
 
+```{r gibratDiff}
+GibratResults
+
+gibDifference <- GibratResults %>%
+  group_by(system) %>%
+  summarise_each(funs(sum(., na.rm = TRUE))) %>%
+  mutate(TotalGibratDiff = (Obs - Sim)/Obs)
+
+gibDifference10tentop <- GibratResults %>%
+  arrange(desc(Obs)) %>%
+  group_by(system) %>%
+  filter(Obs > quantile(Obs, .9, na.rm = TRUE)) %>%
+  summarise_each(funs(sum(., na.rm = TRUE))) %>%
+  mutate(BiggestGibratDiff = (Obs - Sim)/Obs)
+
+gibratDifference <- gibDifference %>%
+  bind_rows(gibDifference10tentop)
+
+
+
+
+```
 
