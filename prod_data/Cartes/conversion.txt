@@ -1,1 +1,0 @@
-mogrify -flatten -density 450 -background red -path ../cartes_cut_png *.pdf
